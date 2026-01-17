@@ -1,28 +1,37 @@
 {
   "models": [
     {
-      "title": "GPT-4 Turbo",
-      "provider": "openai",
-      "model": "gpt-4-turbo-preview",
+      "title": "Claude Sonnet 4.5",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
       "apiKey": "",
-      "contextLength": 128000,
+      "contextLength": 200000,
       "completionOptions": {
         "temperature": 0.7,
         "topP": 1,
-        "presencePenalty": 0,
-        "frequencyPenalty": 0,
-        "maxTokens": 4096
+        "maxTokens": 8000
       }
     },
     {
-      "title": "GPT-3.5 Turbo",
-      "provider": "openai",
-      "model": "gpt-3.5-turbo",
+      "title": "Claude Sonnet 3.5",
+      "provider": "anthropic",
+      "model": "claude-sonnet-3-5-20241022",
       "apiKey": "",
-      "contextLength": 16000,
+      "contextLength": 200000,
       "completionOptions": {
-        "temperature": 0.5,
-        "maxTokens": 2048
+        "temperature": 0.7,
+        "maxTokens": 8000
+      }
+    },
+    {
+      "title": "Claude Opus 4.5",
+      "provider": "anthropic",
+      "model": "claude-opus-4-5-20251101",
+      "apiKey": "",
+      "contextLength": 200000,
+      "completionOptions": {
+        "temperature": 0.7,
+        "maxTokens": 8000
       }
     }
   ],
@@ -30,7 +39,7 @@
     {
       "name": "generate-venture",
       "description": "Generate complete venture code from task file",
-      "prompt": "You are Codex, an expert Next.js developer for Factory OS.\n\nRead the task file and generate a complete, production-ready Next.js 16 application.\n\nIMPORTANT:\n- Use App Router (not Pages Router)\n- Use TypeScript strict mode\n- Use Tailwind CSS v4\n- Create all necessary files\n- Follow the venture structure template\n- Include payment integration if specified\n- Add proper error handling\n- Make it responsive and accessible\n\nOutput format:\n```filepath\npath/to/file.tsx\n```\n\n```typescript\n// file content\n```\n\nGenerate ALL files needed for a working MVP."
+      "prompt": "You are Codex, an expert Next.js developer for Factory OS.\n\nRead the VENTURE_INSTRUCTIONS.md file in the current directory and generate a complete, production-ready Next.js 16 application.\n\nIMPORTANT:\n- Use App Router (not Pages Router)\n- Use TypeScript strict mode\n- Use Tailwind CSS v4\n- Create all necessary files\n- Follow the venture structure template\n- Include payment integration if specified\n- Add proper error handling\n- Make it responsive and accessible\n\nOutput format:\n```filepath\npath/to/file.tsx\n```\n\n```typescript\n// file content\n```\n\nGenerate ALL files needed for a working MVP."
     },
     {
       "name": "fix-venture",
@@ -112,8 +121,8 @@
   ],
   "experimental": {
     "modelRoles": {
-      "default": "GPT-4 Turbo",
-      "summarize": "GPT-3.5 Turbo"
+      "default": "Claude Sonnet 4.5",
+      "summarize": "Claude Sonnet 3.5"
     }
   }
 }
