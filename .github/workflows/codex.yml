@@ -4,6 +4,26 @@ on:
   repository_dispatch:
     types: [venture_approved]
 
+  workflow_dispatch:
+    inputs:
+      ventureId:
+        description: 'Venture ID (e.g., V-2026-001-typescript-1)'
+        required: true
+        type: string
+      slug:
+        description: 'Venture slug (e.g., typescript-1)'
+        required: true
+        type: string
+      taskFile:
+        description: 'Task file path (e.g., factory/tasks/V-2026-001-typescript-1.md)'
+        required: true
+        type: string
+      branchName:
+        description: 'Branch name (e.g., venture/typescript-1)'
+        required: true
+        type: string
+        default: 'venture/new-venture'
+
 jobs:
   generate-venture-code:
     runs-on: ubuntu-latest
@@ -38,11 +58,17 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Support both repository_dispatch and workflow_dispatch
+          VENTURE_ID="${{ github.event.client_payload.ventureId || inputs.ventureId }}"
+          SLUG="${{ github.event.client_payload.slug || inputs.slug }}"
+          TASK_FILE="${{ github.event.client_payload.taskFile || inputs.taskFile }}"
+          BRANCH_NAME="${{ github.event.client_payload.branchName || inputs.branchName }}"
+
           tsx scripts/codex-runner.ts \
-            --ventureId="${{ github.event.client_payload.ventureId }}" \
-            --slug="${{ github.event.client_payload.slug }}" \
-            --taskFile="${{ github.event.client_payload.taskFile }}" \
-            --branchName="${{ github.event.client_payload.branchName }}"
+            --ventureId="${VENTURE_ID}" \
+            --slug="${SLUG}" \
+            --taskFile="${TASK_FILE}" \
+            --branchName="${BRANCH_NAME}"
 
       - name: Comment on status
         if: always()
