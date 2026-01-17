@@ -1,0 +1,19 @@
+{
+  "ventures": [],
+  "signals": [],
+  "lastScoutRun": null,
+  "lastValidatorRun": null,
+  "lastMonitorRun": null,
+  "budget": {
+    "monthly": 50000,
+    "spent": 0,
+    "lastReset": "2025-01-17T00:00:00.000Z"
+  },
+  "stats": {
+    "totalVentures": 0,
+    "activeVentures": 0,
+    "killedVentures": 0,
+    "totalRevenue": 0,
+    "totalMRR": 0
+  }
+}
