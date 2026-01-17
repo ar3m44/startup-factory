@@ -75,7 +75,7 @@ async function testFullPipeline() {
 
     if (validation.decision !== 'GO') {
       console.log(`\n⚠️  Signal was rejected (${validation.decision}). Cannot proceed to venture creation.`);
-      console.log(`   Reasoning: ${validation.reasoning}`);
+      console.log(`   Reasoning: ${validation.riskAssessment?.reasoning ?? 'N/A'}`);
       return;
     }
 

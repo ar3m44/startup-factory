@@ -8,13 +8,15 @@ export interface VentureCardProps {
 }
 
 const statusColors = {
+  active: 'success',
   building: 'warning',
   launched: 'success',
   paused: 'default',
   killed: 'error'
 } as const;
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
+  active: 'Active',
   building: 'Building',
   launched: 'Launched',
   paused: 'Paused',
@@ -50,7 +52,7 @@ export function VentureCard({ venture, onClick }: VentureCardProps) {
         <div>
           <p className="text-xs text-gray-500 mb-1">MRR</p>
           <p className="text-lg font-bold text-gray-900">
-            {metrics.MRR.toLocaleString()}₽
+            {metrics.mrr.toLocaleString()}₽
           </p>
         </div>
 
@@ -85,14 +87,14 @@ export function VentureCard({ venture, onClick }: VentureCardProps) {
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
             <span>Progress to target</span>
             <span>
-              {Math.min(100, (metrics.MRR / venture.blueprint.metrics.targetMRR) * 100).toFixed(0)}%
+              {Math.min(100, (metrics.mrr / venture.blueprint.metrics.targetMRR) * 100).toFixed(0)}%
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-green-500 h-2 rounded-full transition-all duration-500"
               style={{
-                width: `${Math.min(100, (metrics.MRR / venture.blueprint.metrics.targetMRR) * 100)}%`
+                width: `${Math.min(100, (metrics.mrr / venture.blueprint.metrics.targetMRR) * 100)}%`
               }}
             />
           </div>
