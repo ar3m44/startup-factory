@@ -1,0 +1,119 @@
+{
+  "models": [
+    {
+      "title": "GPT-4 Turbo",
+      "provider": "openai",
+      "model": "gpt-4-turbo-preview",
+      "apiKey": "",
+      "contextLength": 128000,
+      "completionOptions": {
+        "temperature": 0.7,
+        "topP": 1,
+        "presencePenalty": 0,
+        "frequencyPenalty": 0,
+        "maxTokens": 4096
+      }
+    },
+    {
+      "title": "GPT-3.5 Turbo",
+      "provider": "openai",
+      "model": "gpt-3.5-turbo",
+      "apiKey": "",
+      "contextLength": 16000,
+      "completionOptions": {
+        "temperature": 0.5,
+        "maxTokens": 2048
+      }
+    }
+  ],
+  "customCommands": [
+    {
+      "name": "generate-venture",
+      "description": "Generate complete venture code from task file",
+      "prompt": "You are Codex, an expert Next.js developer for Factory OS.\n\nRead the task file and generate a complete, production-ready Next.js 16 application.\n\nIMPORTANT:\n- Use App Router (not Pages Router)\n- Use TypeScript strict mode\n- Use Tailwind CSS v4\n- Create all necessary files\n- Follow the venture structure template\n- Include payment integration if specified\n- Add proper error handling\n- Make it responsive and accessible\n\nOutput format:\n```filepath\npath/to/file.tsx\n```\n\n```typescript\n// file content\n```\n\nGenerate ALL files needed for a working MVP."
+    },
+    {
+      "name": "fix-venture",
+      "description": "Fix issues in generated venture code",
+      "prompt": "You are a senior developer reviewing and fixing code.\n\nAnalyze the current code and:\n1. Fix any TypeScript errors\n2. Fix any ESLint warnings\n3. Improve code quality\n4. Add missing error handling\n5. Ensure responsive design\n\nKeep the same structure and features."
+    },
+    {
+      "name": "add-feature",
+      "description": "Add a new feature to venture",
+      "prompt": "You are enhancing an existing Next.js application.\n\nAdd the requested feature following these guidelines:\n1. Maintain existing code style\n2. Use existing components where possible\n3. Add proper TypeScript types\n4. Include error handling\n5. Make it responsive\n6. Update README if needed"
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "venture",
+      "description": "Generate venture from blueprint",
+      "step": "customCommand",
+      "params": {
+        "customCommand": "generate-venture"
+      }
+    },
+    {
+      "name": "fix",
+      "description": "Fix venture code issues",
+      "step": "customCommand",
+      "params": {
+        "customCommand": "fix-venture"
+      }
+    },
+    {
+      "name": "feature",
+      "description": "Add feature to venture",
+      "step": "customCommand",
+      "params": {
+        "customCommand": "add-feature"
+      }
+    }
+  ],
+  "contextProviders": [
+    {
+      "name": "codebase",
+      "params": {}
+    },
+    {
+      "name": "diff",
+      "params": {}
+    },
+    {
+      "name": "terminal",
+      "params": {}
+    },
+    {
+      "name": "problems",
+      "params": {}
+    },
+    {
+      "name": "folder",
+      "params": {}
+    },
+    {
+      "name": "code",
+      "params": {}
+    }
+  ],
+  "allowAnonymousTelemetry": false,
+  "docs": [
+    {
+      "title": "Next.js 16",
+      "startUrl": "https://nextjs.org/docs"
+    },
+    {
+      "title": "Tailwind CSS v4",
+      "startUrl": "https://tailwindcss.com/docs"
+    },
+    {
+      "title": "TypeScript",
+      "startUrl": "https://www.typescriptlang.org/docs"
+    }
+  ],
+  "experimental": {
+    "modelRoles": {
+      "default": "GPT-4 Turbo",
+      "summarize": "GPT-3.5 Turbo"
+    }
+  }
+}

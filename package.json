@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "codex:generate": "tsx scripts/codex-runner.ts",
-    "codex:test": "tsx scripts/codex-runner.ts --ventureId=test-001 --slug=test-venture --taskFile=scripts/test-task.md --branchName=venture/test-venture"
+    "codex:test": "tsx scripts/codex-runner.ts --ventureId=test-001 --slug=test-venture --taskFile=scripts/test-task.md --branchName=venture/test-venture",
+    "codex:local": "tsx scripts/codex-local.ts --ventureId V-2026-001-typescript-1 --taskFile factory/tasks/V-2026-001-typescript-1.md"
   },
   "dependencies": {
     "next": "16.1.3",
