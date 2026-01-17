@@ -3,6 +3,35 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Factory OS Design System - Vercel/Linear Style */
+
+  /* Background */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+
+  /* Borders */
+  --border-light: #f3f4f6;
+  --border-medium: #e5e7eb;
+  --border-dark: #d1d5db;
+
+  /* Accents */
+  --accent-blue: #3b82f6;
+  --accent-blue-dark: #2563eb;
+  --accent-green: #10b981;
+  --accent-green-dark: #059669;
+  --accent-yellow: #f59e0b;
+  --accent-yellow-dark: #d97706;
+  --accent-red: #ef4444;
+  --accent-red-dark: #dc2626;
+  --accent-purple: #8b5cf6;
+  --accent-purple-dark: #7c3aed;
 }
 
 @theme inline {
@@ -23,4 +52,50 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Gradient utilities */
+.gradient-blue {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-green-dark) 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-purple-dark) 100%);
+}
+
+.gradient-yellow {
+  background: linear-gradient(135deg, var(--accent-yellow) 0%, var(--accent-yellow-dark) 100%);
+}
+
+/* Modal overlay animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  animation: slideUp 0.3s ease-out;
 }

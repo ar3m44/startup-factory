@@ -1,8 +1,192 @@
 {
-  "ventures": [],
-  "signals": [],
-  "lastScoutRun": null,
-  "lastValidatorRun": null,
+  "ventures": [
+    {
+      "id": "V-2026-001-typescript-1",
+      "name": "Веб-сервис: загружаешь TypeScript файлы → получаешь красивую интерактивную документацию за 1 минуту",
+      "slug": "typescript-1",
+      "url": "",
+      "status": "active",
+      "track": "FAST",
+      "createdAt": "2026-01-17T14:24:21.051Z",
+      "metrics": {
+        "mrr": 0,
+        "totalRevenue": 0,
+        "totalUsers": 0,
+        "activeUsers7d": 0,
+        "dailyVisits": 0,
+        "conversionRate": 0,
+        "churnRate": 0
+      },
+      "signalId": "",
+      "validationId": "",
+      "blueprint": {
+        "name": "Веб-сервис: загружаешь TypeScript файлы → получаешь красивую интерактивную документацию за 1 минуту",
+        "slug": "typescript-1",
+        "tagline": "Разработчики хотят быстро создавать API документацию из TypeScript кода без сложных инструментов",
+        "description": "Веб-сервис: загружаешь TypeScript файлы → получаешь красивую интерактивную документацию за 1 минуту. Поддержка экспорта в HTML/PDF. Возможность хостинга docs на нашем поддомене.",
+        "targetAudience": {
+          "who": "TypeScript разработчики в России и СНГ, которые создают API для клиентов или внутренних команд. Примерно 50,000+ активных TypeScript разработчиков.",
+          "problem": "Разработчики хотят быстро создавать API документацию из TypeScript кода без сложных инструментов. Существующие решения (Swagger, TypeDoc) требуют много настройки и не генерируют красивые интерактивные docs.",
+          "size": 50000
+        },
+        "mvp": {
+          "coreFeatures": [
+            "Автоматический парсинг TypeScript → красивые docs",
+            "Интерактивный playground для тестирования API",
+            "Экспорт в HTML/PDF с брендингом"
+          ],
+          "userFlow": [
+            "Пользователь заходит на сайт",
+            "Видит главную страницу с предложением",
+            "Нажимает CTA кнопку",
+            "Оплачивает",
+            "Получает доступ/товар"
+          ],
+          "techStack": [
+            "Next.js 16",
+            "TypeScript",
+            "Tailwind CSS",
+            "Vercel",
+            "Stripe/YooKassa"
+          ],
+          "estimatedTime": "5 дней"
+        },
+        "pricing": {
+          "model": "subscription",
+          "price": "499₽/месяц",
+          "currency": "RUB",
+          "paymentProvider": "YooKassa"
+        },
+        "gtm": {
+          "channels": [
+            "Reddit",
+            "ProductHunt",
+            "Telegram"
+          ],
+          "initialBudget": 5000,
+          "firstWeekGoal": "100 visits, 1 purchase"
+        },
+        "metrics": {
+          "track": "FAST",
+          "targetMRR": 10000,
+          "targetUsers": 100,
+          "conversionRate": 1,
+          "killCriteria": [
+            "0 транзакций за 14 дней",
+            "<100 visits/день за 7 дней",
+            "Negative unit economics после 30 дней"
+          ]
+        },
+        "risks": [
+          {
+            "description": "Конкуренция с бесплатными",
+            "severity": "medium",
+            "mitigation": "Фокус на UX и скорость, платим за convenience"
+          },
+          {
+            "description": "Технический: парсинг сложного TS",
+            "severity": "medium",
+            "mitigation": "Используем готовые библиотеки (TypeScript Compiler API)"
+          },
+          {
+            "description": "Малый рынок в России",
+            "severity": "low",
+            "mitigation": "Запуск на английском для глобального рынка"
+          }
+        ]
+      }
+    }
+  ],
+  "signals": [
+    {
+      "id": "SIGNAL-2025-01-17-12-00",
+      "date": "2025-01-17T12:00:00Z",
+      "source": "Reddit",
+      "sourceUrl": "https://reddit.com/r/SaaS/example",
+      "confidenceScore": 85,
+      "problem": "Разработчики хотят быстро создавать API документацию из TypeScript кода без сложных инструментов. Существующие решения (Swagger, TypeDoc) требуют много настройки и не генерируют красивые интерактивные docs.",
+      "targetAudience": "TypeScript разработчики в России и СНГ, которые создают API для клиентов или внутренних команд. Примерно 50,000+ активных TypeScript разработчиков.",
+      "quotes": [
+        {
+          "text": "Почему нет простого способа сгенерировать красивую документацию из моего TypeScript кода?",
+          "url": "https://reddit.com/r/SaaS/1"
+        },
+        {
+          "text": "Swagger это overkill для моего небольшого API. Нужно что-то проще",
+          "url": "https://reddit.com/r/typescript/2"
+        },
+        {
+          "text": "Устал настраивать TypeDoc каждый раз. Хочу просто нажать кнопку и получить docs",
+          "url": "https://twitter.com/dev/3"
+        }
+      ],
+      "context": "TypeScript становится стандартом для backend разработки. Растущий спрос на простые инструменты для документирования API. Многие разработчики ищут альтернативы сложным решениям.",
+      "mvpDescription": "Веб-сервис: загружаешь TypeScript файлы → получаешь красивую интерактивную документацию за 1 минуту. Поддержка экспорта в HTML/PDF. Возможность хостинга docs на нашем поддомене.",
+      "price": "499₽/месяц",
+      "track": "FAST",
+      "keyFeatures": [
+        "Автоматический парсинг TypeScript → красивые docs",
+        "Интерактивный playground для тестирования API",
+        "Экспорт в HTML/PDF с брендингом"
+      ],
+      "tam": "~$2M/год в России. 50,000 TypeScript разработчиков × 40% нужна документация × 999₽/год = ~$200k MRR потенциал.",
+      "competitors": [
+        {
+          "name": "Swagger",
+          "description": "сложная настройка, enterprise фокус",
+          "price": "Бесплатно"
+        },
+        {
+          "name": "TypeDoc",
+          "description": "требует конфигурации, некрасивый вывод",
+          "price": "Бесплатно"
+        },
+        {
+          "name": "Postman Docs",
+          "description": "только для REST API",
+          "price": "$49/мес"
+        }
+      ],
+      "advantage": "Проще в использовании (drag & drop), красивее (современный UI), дешевле для малых команд, русский интерфейс, быстрый старт (1 минута).",
+      "criteria": {
+        "mandatory": {
+          "repeatability": true,
+          "targetAudienceSize": true,
+          "paymentWillingness": true,
+          "feasibility": true,
+          "noFreeAlternatives": true
+        },
+        "optional": {
+          "urgency": true,
+          "simpleMVP": true,
+          "viralPotential": false,
+          "recurringRevenue": true,
+          "lowCompetition": true
+        }
+      },
+      "risks": [
+        {
+          "description": "Конкуренция с бесплатными",
+          "probability": "medium",
+          "mitigation": "Фокус на UX и скорость, платим за convenience"
+        },
+        {
+          "description": "Технический: парсинг сложного TS",
+          "probability": "medium",
+          "mitigation": "Используем готовые библиотеки (TypeScript Compiler API)"
+        },
+        {
+          "description": "Малый рынок в России",
+          "probability": "low",
+          "mitigation": "Запуск на английском для глобального рынка"
+        }
+      ],
+      "status": "validated",
+      "validationId": "VALIDATION-2026-01-17T14-24-21"
+    }
+  ],
+  "lastScoutRun": "2026-01-17T08:49:32.213Z",
+  "lastValidatorRun": "2026-01-17T14:24:21.050Z",
   "lastMonitorRun": null,
   "budget": {
     "monthly": 50000,
@@ -10,8 +194,8 @@
     "lastReset": "2025-01-17T00:00:00.000Z"
   },
   "stats": {
-    "totalVentures": 0,
-    "activeVentures": 0,
+    "totalVentures": 1,
+    "activeVentures": 1,
     "killedVentures": 0,
     "totalRevenue": 0,
     "totalMRR": 0

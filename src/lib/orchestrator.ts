@@ -14,6 +14,7 @@ import type {
 } from './types';
 import { ScoutAgent } from './agents/scout';
 import { ValidatorAgent } from './agents/validator';
+import { CodexAgent } from './agents/codex';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -31,12 +32,14 @@ export class Orchestrator {
   private statePath: string;
   private scoutAgent: ScoutAgent;
   private validatorAgent: ValidatorAgent;
+  private codexAgent: CodexAgent;
   private config: OrchestratorConfig;
 
   constructor(config?: Partial<OrchestratorConfig>) {
     this.statePath = path.join(process.cwd(), 'factory', 'state.json');
     this.scoutAgent = new ScoutAgent();
     this.validatorAgent = new ValidatorAgent();
+    this.codexAgent = new CodexAgent();
 
     // Default config (Phase 1: manual mode)
     this.config = {
@@ -348,6 +351,24 @@ export class Orchestrator {
     });
 
     console.log(`✅ Venture ${ventureId} created`);
+
+    // 🤖 Trigger Codex Agent для генерации кода
+    console.log(`🤖 Triggering Codex Agent for code generation...`);
+    const codexResult = await this.codexAgent.triggerCodeGeneration({
+      venture,
+      blueprint,
+      taskDescription: `Build ${blueprint.name} - ${blueprint.tagline}`,
+    });
+
+    if (codexResult.success) {
+      console.log(`✅ Codex Agent triggered successfully`);
+      console.log(`📌 Branch: ${codexResult.branchName}`);
+      if (codexResult.prUrl) {
+        console.log(`🔗 PR will be created at: ${codexResult.prUrl}`);
+      }
+    } else {
+      console.warn(`⚠️  Codex Agent failed: ${codexResult.error}`);
+    }
 
     return venture;
   }
