@@ -1,6 +1,6 @@
 # Codex Agent - Setup & Usage
 
-Codex Agent is the autonomous code generation component of Factory OS. It uses Claude Sonnet 4 via the Anthropic API to generate complete Next.js applications based on venture blueprints.
+Codex Agent is the autonomous code generation component of Factory OS. It uses GPT-4 via the OpenAI API to generate complete Next.js applications based on venture blueprints.
 
 ## Architecture
 
@@ -35,9 +35,9 @@ Vercel Deploy
 Add the following secrets to your GitHub repository (Settings → Secrets and variables → Actions):
 
 #### Required:
-- `ANTHROPIC_API_KEY` - Your Anthropic API key
-  - Get it from: https://console.anthropic.com/settings/keys
-  - Example: `sk-ant-api03-...`
+- `OPENAI_API_KEY` - Your OpenAI API key
+  - Get it from: https://platform.openai.com/api-keys
+  - Example: `sk-proj-...` or `sk-...`
 
 #### Optional (for PR creation):
 - `GITHUB_TOKEN` - Auto-provided by GitHub Actions
@@ -48,7 +48,7 @@ Add the following secrets to your GitHub repository (Settings → Secrets and va
 For local testing, create `.env.local`:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-api03-...
+OPENAI_API_KEY=sk-proj-... # или sk-...
 GITHUB_TOKEN=ghp_...  # Optional, for local PR testing
 GITHUB_REPOSITORY=your-username/startup-factory
 ```
@@ -56,7 +56,7 @@ GITHUB_REPOSITORY=your-username/startup-factory
 ### 3. Install Dependencies
 
 ```bash
-npm install @anthropic-ai/sdk
+npm install openai
 npm install -g tsx  # For running TypeScript scripts
 ```
 

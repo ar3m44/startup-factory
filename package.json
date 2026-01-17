@@ -12,8 +12,8 @@
     "codex:test": "tsx scripts/codex-runner.ts --ventureId=test-001 --slug=test-venture --taskFile=scripts/test-task.md --branchName=venture/test-venture"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
     "next": "16.1.3",
+    "openai": "^6.16.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

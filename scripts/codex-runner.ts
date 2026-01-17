@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 // ============================================================================
-// CODEX RUNNER - Генерирует код для venture через Anthropic API
+// CODEX RUNNER - Генерирует код для venture через OpenAI API
 // ============================================================================
 
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import fs from 'fs/promises';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -21,13 +21,13 @@ interface CodexRunnerOptions {
  * Workflow:
  * 1. Читает task file из factory/tasks/
  * 2. Читает PROMPT_CODEX.md и PROMPT_DESIGNER.md
- * 3. Вызывает Anthropic API для генерации кода
+ * 3. Вызывает OpenAI API для генерации кода
  * 4. Парсит ответ и создаёт файлы
  * 5. Делает git commit + push
  * 6. Создаёт Pull Request
  */
 class CodexRunner {
-  private client: Anthropic;
+  private client: OpenAI;
   private ventureId: string;
   private slug: string;
   private taskFile: string;
@@ -35,12 +35,12 @@ class CodexRunner {
   private ventureDir: string;
 
   constructor(options: CodexRunnerOptions) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is required');
+      throw new Error('OPENAI_API_KEY environment variable is required');
     }
 
-    this.client = new Anthropic({ apiKey });
+    this.client = new OpenAI({ apiKey });
     this.ventureId = options.ventureId;
     this.slug = options.slug;
     this.taskFile = options.taskFile;
@@ -150,17 +150,21 @@ Make sure to create ALL necessary files for a working MVP.
   }
 
   /**
-   * Генерировать код через Claude API
+   * Генерировать код через OpenAI API (GPT-4)
    */
   private async generateCode(
     systemPrompt: string,
     taskContent: string
   ): Promise<string> {
-    const response = await this.client.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+    const response = await this.client.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
       max_tokens: 8000,
-      system: systemPrompt,
+      temperature: 0.7,
       messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
         {
           role: 'user',
           content: `${taskContent}
@@ -178,12 +182,12 @@ Output each file using the specified format.`,
       ],
     });
 
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API');
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response from OpenAI API');
     }
 
-    return content.text;
+    return content;
   }
 
   /**
