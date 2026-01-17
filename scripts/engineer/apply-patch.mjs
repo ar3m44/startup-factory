@@ -82,7 +82,7 @@ async function editFile(projectRoot, filePath, patchContent) {
   let originalContent;
   try {
     originalContent = await fs.readFile(fullPath, 'utf-8');
-  } catch (error) {
+  } catch {
     throw new Error(`File not found for editing: ${filePath}`);
   }
 

@@ -95,7 +95,7 @@ class CodexRunner {
   private createBranch(): void {
     try {
       execSync(`git checkout -b ${this.branchName}`, { stdio: 'inherit' });
-    } catch (error) {
+    } catch {
       // Branch might already exist
       execSync(`git checkout ${this.branchName}`, { stdio: 'inherit' });
     }

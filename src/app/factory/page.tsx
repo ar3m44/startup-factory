@@ -6,7 +6,7 @@ import { StatsGrid } from '@/components/Dashboard/StatsGrid';
 import { SignalCard } from '@/components/Cards/SignalCard';
 import { VentureCard } from '@/components/Cards/VentureCard';
 import { Button } from '@/components/UI/Button';
-import type { Signal, Venture, FactoryState } from '@/lib/types';
+import type { Signal, FactoryState } from '@/lib/types';
 
 interface StateResponse {
   success: boolean;

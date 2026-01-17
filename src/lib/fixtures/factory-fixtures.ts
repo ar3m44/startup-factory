@@ -8,7 +8,7 @@
 // - GitHub API (PR links, CI status)
 // ============================================================================
 
-import type { Venture, Task, AuditEntry } from '@/lib/types';
+import type { Venture } from '@/lib/types';
 
 /**
  * Demo ventures data

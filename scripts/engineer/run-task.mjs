@@ -109,12 +109,12 @@ class EngineerRunner {
   createBranch() {
     try {
       execSync(`git checkout -b ${this.branchName}`, { stdio: 'inherit' });
-    } catch (error) {
+    } catch {
       // Branch might exist, checkout instead
       try {
         execSync(`git checkout ${this.branchName}`, { stdio: 'inherit' });
       } catch (checkoutError) {
-        throw new Error(`Failed to create/checkout branch: ${checkoutError.message}`);
+        throw new Error(`Failed to create/checkout branch: ${checkoutError}`);
       }
     }
   }
