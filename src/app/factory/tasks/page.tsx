@@ -1,7 +1,7 @@
 import { TasksList } from '@/components/ControlPanel/TasksList';
 import { Breadcrumbs } from '@/components/ControlPanel/Breadcrumbs';
 import { Header } from '@/components/Dashboard/Header';
-import { fixtureTasks } from '@/lib/fixtures/factory-fixtures';
+import { getFixtureTasks } from '@/lib/fixtures/factory-fixtures';
 
 export const metadata = {
   title: 'Задачи | Factory OS',
@@ -25,7 +25,7 @@ export default function TasksPage() {
           <p className="text-neutral-500">Инженерные задачи, выполняемые Factory OS</p>
         </div>
 
-        <TasksList tasks={fixtureTasks} />
+        <TasksList tasks={getFixtureTasks()} />
       </div>
     </div>
   );

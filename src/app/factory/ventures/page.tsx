@@ -1,7 +1,7 @@
 import { VenturesList } from '@/components/ControlPanel/VenturesList';
 import { Breadcrumbs } from '@/components/ControlPanel/Breadcrumbs';
 import { Header } from '@/components/Dashboard/Header';
-import { fixtureVentures } from '@/lib/fixtures/factory-fixtures';
+import { getFixtureVentures } from '@/lib/fixtures/factory-fixtures';
 
 export const metadata = {
   title: 'Проекты | Factory OS',
@@ -25,7 +25,7 @@ export default function VenturesPage() {
           <p className="text-neutral-500">Все стартапы, созданные Factory OS</p>
         </div>
 
-        <VenturesList ventures={fixtureVentures} />
+        <VenturesList ventures={getFixtureVentures()} />
       </div>
     </div>
   );

@@ -1,185 +1,90 @@
 // ============================================================================
-// FACTORY FIXTURES - Demo data for read-only Factory Control Panel
+// FACTORY FIXTURES - Now reads from SQLite database
 // ============================================================================
-// TODO: Replace with real data from:
-// - factory/state.json (ventures, signals)
-// - factory/tasks/*.md (tasks)
-// - factory/audit/*.md (audit entries)
-// - GitHub API (PR links, CI status)
+// This file provides compatibility layer for components still using fixtures
+// All data is now stored in SQLite database (factory.db)
 // ============================================================================
 
+import {
+  getAllVentures,
+  getAllTasks,
+  getAllAuditEntries,
+  getFactoryStats,
+  type DbTask,
+  type DbAuditEntry,
+} from '@/lib/db';
+import { seedDatabase } from '@/lib/db/seed';
 import type { Venture } from '@/lib/types';
 
-/**
- * Demo ventures data
- * TODO: Ingest from factory/state.json via API route
- */
-export const fixtureVentures: Venture[] = [
-  {
-    id: 'V-2026-001-typescript-1',
-    name: 'TypeScript Docs Generator',
-    slug: 'typescript-docs',
-    url: '',
-    status: 'active',
-    track: 'FAST',
-    createdAt: '2026-01-17T14:24:21.051Z',
-    metrics: {
-      mrr: 0,
-      totalRevenue: 0,
-      totalUsers: 0,
-      activeUsers7d: 0,
-      dailyVisits: 0,
-      conversionRate: 0,
-      churnRate: 0,
-    },
-    signalId: 'SIGNAL-2025-01-17-12-00',
-    validationId: 'VALIDATION-2026-01-17T14-24-21',
-    blueprint: {
-      name: 'TypeScript Docs Generator',
-      slug: 'typescript-docs',
-      tagline: 'Upload TypeScript files, get beautiful docs in 1 minute',
-      description: 'Web service for auto-generating interactive API docs from TypeScript',
-      targetAudience: {
-        who: 'TypeScript developers in Russia/CIS',
-        problem: 'Need simple API documentation without complex setup',
-        size: 50000,
-      },
-      mvp: {
-        coreFeatures: ['Auto-parse TS to docs', 'Interactive playground', 'Export HTML/PDF'],
-        userFlow: ['Upload files', 'Preview docs', 'Pay', 'Download/Host'],
-        techStack: ['Next.js 16', 'TypeScript', 'Tailwind CSS', 'Vercel'],
-        estimatedTime: '5 days',
-      },
-      pricing: {
-        model: 'subscription',
-        price: '499 RUB/month',
-        currency: 'RUB',
-        paymentProvider: 'YooKassa',
-      },
-      gtm: {
-        channels: ['Reddit', 'ProductHunt', 'Telegram'],
-        initialBudget: 5000,
-        firstWeekGoal: '100 visits, 1 purchase',
-      },
-      metrics: {
-        track: 'FAST',
-        targetMRR: 10000,
-        targetUsers: 100,
-        conversionRate: 1,
-        killCriteria: ['0 transactions in 14 days', '<100 visits/day for 7 days'],
-      },
-      risks: [
-        { description: 'Free alternatives competition', severity: 'medium', mitigation: 'Focus on UX' },
-      ],
-    },
-  },
-];
+// Ensure database is seeded on first import
+try {
+  seedDatabase();
+} catch {
+  // Ignore if already seeded
+}
 
 /**
- * Demo tasks data
- * TODO: Ingest from factory/tasks/*.md files
+ * Get all ventures from database
  */
-export const fixtureTasks: FixtureTask[] = [
-  {
-    id: 'TASK-0008',
-    title: 'Implement ENGINEER RUNNER with Claude API',
-    status: 'done',
-    priority: 'P0',
-    ventureId: 'V-FACTORY-000',
-    prUrl: 'https://github.com/ar3m44/startup-factory/pull/1',
-    ciStatus: 'success',
-    updatedAt: '2026-01-17T10:00:00Z',
-  },
-  {
-    id: 'TASK-0009',
-    title: 'Factory Control Panel (read-only)',
-    status: 'in_progress',
-    priority: 'P1',
-    ventureId: 'V-FACTORY-000',
-    prUrl: null,
-    ciStatus: null,
-    updatedAt: '2026-01-17T12:00:00Z',
-  },
-  {
-    id: 'TASK-0010',
-    title: 'Enable Auto-Merge in Engineer Workflow',
-    status: 'draft',
-    priority: 'P2',
-    ventureId: 'V-FACTORY-000',
-    prUrl: null,
-    ciStatus: null,
-    updatedAt: '2026-01-16T09:00:00Z',
-  },
-];
+export function getFixtureVentures(): Venture[] {
+  return getAllVentures();
+}
 
 /**
- * Demo audit entries
- * TODO: Ingest from factory/audit/*.md files
+ * Get all tasks from database
  */
-export const fixtureAuditEntries: FixtureAuditEntry[] = [
-  {
-    id: 'AUDIT-2026-01-17-001',
-    timestamp: '2026-01-17T14:24:21Z',
-    ventureId: 'V-2026-001-typescript-1',
-    actor: 'Validator',
-    action: 'validation_completed',
-    result: 'GO',
-  },
-  {
-    id: 'AUDIT-2026-01-17-002',
-    timestamp: '2026-01-17T08:49:32Z',
-    ventureId: null,
-    actor: 'Scout',
-    action: 'signal_found',
-    result: 'SIGNAL-2025-01-17-12-00',
-  },
-  {
-    id: 'AUDIT-2026-01-17-003',
-    timestamp: '2026-01-17T08:47:28Z',
-    ventureId: null,
-    actor: 'Orchestrator',
-    action: 'system_startup',
-    result: 'OK',
-  },
-  {
-    id: 'AUDIT-2026-01-16-001',
-    timestamp: '2026-01-16T15:00:00Z',
-    ventureId: 'V-FACTORY-000',
-    actor: 'User',
-    action: 'task_created',
-    result: 'TASK-0008',
-  },
-  {
-    id: 'AUDIT-2026-01-16-002',
-    timestamp: '2026-01-16T10:30:00Z',
-    ventureId: null,
-    actor: 'Orchestrator',
-    action: 'config_updated',
-    result: 'OK',
-  },
-];
+export function getFixtureTasks(): FixtureTask[] {
+  const tasks = getAllTasks();
+  return tasks.map(dbTaskToFixtureTask);
+}
 
 /**
- * Demo metrics data
- * TODO: Aggregate from venture metrics and external analytics
+ * Get all audit entries from database
  */
+export function getFixtureAuditEntries(): FixtureAuditEntry[] {
+  const entries = getAllAuditEntries();
+  return entries.map(dbAuditToFixtureAudit);
+}
+
+/**
+ * Get factory metrics from database
+ */
+export function getFixtureMetrics(): FactoryMetrics {
+  const stats = getFactoryStats();
+  return {
+    totalLeads: stats.pendingSignals,
+    totalRevenue: stats.totalRevenue,
+    conversionRate: stats.totalSignals > 0 ? (stats.totalVentures / stats.totalSignals) * 100 : null,
+    activeVentures: stats.activeVentures,
+    totalTasks: stats.totalTasks,
+    completedTasks: stats.completedTasks,
+  };
+}
+
+// ============================================================================
+// Compatibility exports (for static pages that don't support dynamic data yet)
+// ============================================================================
+
+export const fixtureVentures: Venture[] = [];
+export const fixtureTasks: FixtureTask[] = [];
+export const fixtureAuditEntries: FixtureAuditEntry[] = [];
 export const fixtureMetrics: FactoryMetrics = {
   totalLeads: 0,
   totalRevenue: 0,
   conversionRate: null,
-  activeVentures: 1,
-  totalTasks: 3,
-  completedTasks: 1,
+  activeVentures: 0,
+  totalTasks: 0,
+  completedTasks: 0,
 };
 
 // ============================================================================
-// Types for fixtures (simplified for demo)
+// Types for fixtures
 // ============================================================================
 
 export interface FixtureTask {
   id: string;
   title: string;
-  status: 'draft' | 'in_progress' | 'done';
+  status: 'draft' | 'pending' | 'in_progress' | 'review' | 'done' | 'failed';
   priority: 'P0' | 'P1' | 'P2';
   ventureId: string;
   prUrl: string | null;
@@ -191,7 +96,7 @@ export interface FixtureAuditEntry {
   id: string;
   timestamp: string;
   ventureId: string | null;
-  actor: 'Scout' | 'Validator' | 'Orchestrator' | 'Launcher' | 'Monitor' | 'User';
+  actor: 'Scout' | 'Validator' | 'Orchestrator' | 'Launcher' | 'Monitor' | 'User' | 'Engineer';
   action: string;
   result: string;
 }
@@ -203,4 +108,32 @@ export interface FactoryMetrics {
   activeVentures: number;
   totalTasks: number;
   completedTasks: number;
+}
+
+// ============================================================================
+// Converters
+// ============================================================================
+
+function dbTaskToFixtureTask(task: DbTask): FixtureTask {
+  return {
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    ventureId: task.ventureId,
+    prUrl: task.prUrl || null,
+    ciStatus: task.ciStatus || null,
+    updatedAt: task.updatedAt,
+  };
+}
+
+function dbAuditToFixtureAudit(entry: DbAuditEntry): FixtureAuditEntry {
+  return {
+    id: entry.id,
+    timestamp: entry.timestamp,
+    ventureId: entry.ventureId || null,
+    actor: entry.actor,
+    action: entry.action,
+    result: entry.result || '',
+  };
 }

@@ -15,6 +15,18 @@ import type {
 import { ScoutAgent } from './agents/scout';
 import { ValidatorAgent } from './agents/validator';
 import { CodexAgent } from './agents/codex';
+import {
+  getAllSignals,
+  getAllVentures,
+  getFactoryState,
+  getFactoryStats,
+  createSignal as dbCreateSignal,
+  createVenture as dbCreateVenture,
+  createAuditEntry as dbCreateAuditEntry,
+  updateSignalStatus,
+  updateFactoryState,
+  updateVenture,
+} from './db';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -29,14 +41,12 @@ import path from 'path';
  * - Управление state системы
  */
 export class Orchestrator {
-  private statePath: string;
   private scoutAgent: ScoutAgent;
   private validatorAgent: ValidatorAgent;
   private codexAgent: CodexAgent;
   private config: OrchestratorConfig;
 
   constructor(config?: Partial<OrchestratorConfig>) {
-    this.statePath = path.join(process.cwd(), 'factory', 'state.json');
     this.scoutAgent = new ScoutAgent();
     this.validatorAgent = new ValidatorAgent();
     this.codexAgent = new CodexAgent();
@@ -73,78 +83,51 @@ export class Orchestrator {
   }
 
   // ============================================================================
-  // STATE MANAGEMENT
+  // STATE MANAGEMENT (now using SQLite database)
   // ============================================================================
 
   /**
-   * Загрузить текущее состояние системы
+   * Загрузить текущее состояние системы из БД
    */
   async loadState(): Promise<FactoryState> {
-    try {
-      const content = await fs.readFile(this.statePath, 'utf-8');
-      return JSON.parse(content) as FactoryState;
-    } catch {
-      // Если файла нет - создать начальное состояние
-      console.warn('State file not found, creating initial state');
-      return this.createInitialState();
-    }
-  }
+    const ventures = getAllVentures();
+    const signals = getAllSignals();
+    const dbState = getFactoryState();
+    const stats = getFactoryStats();
 
-  /**
-   * Сохранить состояние системы
-   */
-  async saveState(state: FactoryState): Promise<void> {
-    await fs.writeFile(
-      this.statePath,
-      JSON.stringify(state, null, 2),
-      'utf-8'
-    );
-  }
-
-  /**
-   * Создать начальное состояние
-   */
-  private createInitialState(): FactoryState {
     return {
-      ventures: [],
-      signals: [],
-      lastScoutRun: null,
-      lastValidatorRun: null,
-      lastMonitorRun: null,
+      ventures,
+      signals,
+      lastScoutRun: dbState.lastScoutRun,
+      lastValidatorRun: dbState.lastValidatorRun,
+      lastMonitorRun: dbState.lastMonitorRun,
       budget: {
-        monthly: 50000,
-        spent: 0,
-        lastReset: new Date().toISOString(),
+        monthly: dbState.budgetMonthly,
+        spent: dbState.budgetSpent,
+        lastReset: dbState.budgetLastReset,
       },
       stats: {
-        totalVentures: 0,
-        activeVentures: 0,
-        killedVentures: 0,
-        totalRevenue: 0,
-        totalMRR: 0,
+        totalVentures: stats.totalVentures,
+        activeVentures: stats.activeVentures,
+        killedVentures: stats.totalVentures - stats.activeVentures,
+        totalRevenue: stats.totalRevenue,
+        totalMRR: stats.totalMRR,
       },
     };
   }
 
   /**
-   * Обновить статистику в state
+   * Сохранить состояние системы (обновляет только метаданные, данные сохраняются через отдельные методы)
    */
-  private updateStats(state: FactoryState): void {
-    state.stats.totalVentures = state.ventures.length;
-    state.stats.activeVentures = state.ventures.filter(
-      (v) => v.status === 'active'
-    ).length;
-    state.stats.killedVentures = state.ventures.filter(
-      (v) => v.status === 'killed'
-    ).length;
-    state.stats.totalRevenue = state.ventures.reduce(
-      (sum, v) => sum + v.metrics.totalRevenue,
-      0
-    );
-    state.stats.totalMRR = state.ventures.reduce(
-      (sum, v) => sum + (v.status === 'active' ? v.metrics.mrr : 0),
-      0
-    );
+  async saveState(state: FactoryState): Promise<void> {
+    updateFactoryState({
+      lastScoutRun: state.lastScoutRun,
+      lastValidatorRun: state.lastValidatorRun,
+      lastMonitorRun: state.lastMonitorRun,
+      budgetMonthly: state.budget.monthly,
+      budgetSpent: state.budget.spent,
+      budgetLastReset: state.budget.lastReset,
+    });
   }
 
   // ============================================================================
@@ -198,8 +181,12 @@ export class Orchestrator {
       `✅ Scout found ${signals.length} signals, ${qualitySignals.length} above threshold (${this.config.scout.confidenceThreshold})`
     );
 
+    // Сохранить сигналы в БД
+    for (const signal of qualitySignals) {
+      dbCreateSignal(signal);
+    }
+
     // Обновить state
-    state.signals.push(...qualitySignals);
     state.lastScoutRun = new Date().toISOString();
     await this.saveState(state);
 
@@ -250,9 +237,9 @@ export class Orchestrator {
     // Запустить Validator агента
     const result = await this.validatorAgent.validate(signal);
 
-    // Обновить signal status
-    signal.status = result.decision === 'GO' ? 'validated' : 'rejected';
-    signal.validationId = result.id;
+    // Обновить signal status в БД
+    const newStatus = result.decision === 'GO' ? 'validated' : 'rejected';
+    updateSignalStatus(signalId, newStatus, result.id);
 
     // Обновить state
     state.lastValidatorRun = new Date().toISOString();
@@ -330,10 +317,8 @@ export class Orchestrator {
       blueprint,
     };
 
-    // Добавить в state
-    state.ventures.push(venture);
-    this.updateStats(state);
-    await this.saveState(state);
+    // Сохранить venture в БД
+    dbCreateVenture(venture);
 
     // Создать директорию venture
     await this.createVentureDirectory(venture);
@@ -486,7 +471,7 @@ ${r.mitigation}
   // ============================================================================
 
   /**
-   * Создать audit entry
+   * Создать audit entry в БД
    */
   private async createAuditEntry(
     entry: Omit<AuditEntry, 'id' | 'date'>
@@ -494,41 +479,17 @@ ${r.mitigation}
     const now = new Date();
     const id = `AUDIT-${now.toISOString().replace(/:/g, '-').split('.')[0]}`;
 
-    const auditEntry: AuditEntry = {
+    // Сохранить в БД
+    dbCreateAuditEntry({
       id,
-      date: now.toISOString(),
-      ...entry,
-    };
-
-    // Сохранить в factory/audit/
-    const auditPath = path.join(
-      process.cwd(),
-      'factory',
-      'audit',
-      `${id}.md`
-    );
-
-    const content = `# ${id}
-
-**Date**: ${auditEntry.date}
-**Type**: ${auditEntry.type}
-**Actor**: ${auditEntry.actor}
-
-## Data
-
-\`\`\`json
-${JSON.stringify(auditEntry.data, null, 2)}
-\`\`\`
-
-## Metadata
-
-\`\`\`json
-${JSON.stringify(auditEntry.metadata, null, 2)}
-\`\`\`
-`;
-
-    await fs.mkdir(path.dirname(auditPath), { recursive: true });
-    await fs.writeFile(auditPath, content);
+      timestamp: now.toISOString(),
+      ventureId: entry.data.ventureId as string | undefined,
+      actor: entry.actor,
+      action: entry.type,
+      result: entry.data.decision as string || entry.data.signalId as string || 'OK',
+      data: entry.data as Record<string, unknown>,
+      metadata: entry.metadata as Record<string, unknown>,
+    });
   }
 
   // ============================================================================

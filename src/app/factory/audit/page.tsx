@@ -1,7 +1,7 @@
 import { AuditList } from '@/components/ControlPanel/AuditList';
 import { Breadcrumbs } from '@/components/ControlPanel/Breadcrumbs';
 import { Header } from '@/components/Dashboard/Header';
-import { fixtureAuditEntries } from '@/lib/fixtures/factory-fixtures';
+import { getFixtureAuditEntries } from '@/lib/fixtures/factory-fixtures';
 
 export const metadata = {
   title: 'Журнал | Factory OS',
@@ -25,7 +25,7 @@ export default function AuditPage() {
           <p className="text-neutral-500">Полная история действий в системе</p>
         </div>
 
-        <AuditList entries={fixtureAuditEntries} />
+        <AuditList entries={getFixtureAuditEntries()} />
       </div>
     </div>
   );
