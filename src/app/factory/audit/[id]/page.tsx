@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AuditDetail } from '@/components/ControlPanel/AuditDetail';
-import { fixtureAuditEntries } from '@/lib/fixtures/factory-fixtures';
+import { Header } from '@/components/Dashboard/Header';
+import { getAuditEntryById } from '@/lib/db';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -8,21 +9,21 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const entry = fixtureAuditEntries.find(e => e.id === id);
+  const entry = getAuditEntryById(id);
 
   if (!entry) {
-    return { title: 'Audit Entry Not Found | Factory OS' };
+    return { title: 'Запись не найдена | Factory OS' };
   }
 
   return {
     title: `${entry.actor}: ${entry.action} | Factory OS`,
-    description: `Audit entry for ${entry.action} by ${entry.actor}`,
+    description: `Запись журнала: ${entry.action} от ${entry.actor}`,
   };
 }
 
 export default async function AuditDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const entry = fixtureAuditEntries.find(e => e.id === id);
+  const entry = getAuditEntryById(id);
 
   if (!entry) {
     notFound();
@@ -30,6 +31,7 @@ export default async function AuditDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      <Header />
       <div className="max-w-6xl mx-auto px-6 py-8">
         <AuditDetail entry={entry} />
       </div>

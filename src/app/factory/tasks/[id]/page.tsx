@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import fs from 'fs/promises';
 import path from 'path';
 import { TaskDetail } from '@/components/ControlPanel/TaskDetail';
-import { fixtureTasks } from '@/lib/fixtures/factory-fixtures';
+import { Header } from '@/components/Dashboard/Header';
+import { getTaskById } from '@/lib/db';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -28,10 +29,10 @@ async function loadReportContent(taskId: string): Promise<string | undefined> {
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const task = fixtureTasks.find(t => t.id === id);
+  const task = getTaskById(id);
 
   if (!task) {
-    return { title: 'Task Not Found | Factory OS' };
+    return { title: 'Задача не найдена | Factory OS' };
   }
 
   return {
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function TaskDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const task = fixtureTasks.find(t => t.id === id);
+  const task = getTaskById(id);
 
   if (!task) {
     notFound();
@@ -55,6 +56,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      <Header />
       <div className="max-w-6xl mx-auto px-6 py-8">
         <TaskDetail
           task={task}
