@@ -16,6 +16,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Check for hidden Unicode characters
+        run: node scripts/check-unicode.mjs
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present
       - run: npm run build --if-present
