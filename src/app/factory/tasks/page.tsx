@@ -1,7 +1,7 @@
-import { TasksList } from '@/components/ControlPanel/TasksList';
+import { TasksPageClient } from './TasksPageClient';
 import { Breadcrumbs } from '@/components/ControlPanel/Breadcrumbs';
 import { Header } from '@/components/Dashboard/Header';
-import { getFixtureTasks } from '@/lib/fixtures/factory-fixtures';
+import { getFixtureTasks, getFixtureVentures } from '@/lib/fixtures/factory-fixtures';
 
 export const metadata = {
   title: 'Задачи | Factory OS',
@@ -9,6 +9,9 @@ export const metadata = {
 };
 
 export default function TasksPage() {
+  const tasks = getFixtureTasks();
+  const ventures = getFixtureVentures().map(v => ({ id: v.id, name: v.name }));
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <Header />
@@ -20,12 +23,7 @@ export default function TasksPage() {
           ]}
         />
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Задачи</h1>
-          <p className="text-neutral-500">Инженерные задачи, выполняемые Factory OS</p>
-        </div>
-
-        <TasksList tasks={getFixtureTasks()} />
+        <TasksPageClient initialTasks={tasks} ventures={ventures} />
       </div>
     </div>
   );

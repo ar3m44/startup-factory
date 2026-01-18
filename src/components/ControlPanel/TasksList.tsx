@@ -9,11 +9,14 @@ import type { FixtureTask } from '@/lib/fixtures/factory-fixtures';
 
 interface TasksListProps {
   tasks: FixtureTask[];
+  onRunEngineer?: (taskId: string) => void;
 }
 
 const statusLabels: Record<string, string> = {
   draft: 'Черновик',
+  pending: 'Ожидание',
   in_progress: 'В работе',
+  review: 'Проверка',
   done: 'Готово',
   failed: 'Ошибка',
 };
@@ -24,7 +27,7 @@ const ciLabels: Record<string, string> = {
   failure: 'Ошибка',
 };
 
-export function TasksList({ tasks }: TasksListProps) {
+export function TasksList({ tasks, onRunEngineer }: TasksListProps) {
   const [filteredTasks, setFilteredTasks] = useState(tasks);
 
   const handleSearch = useCallback((query: string) => {
@@ -71,6 +74,7 @@ export function TasksList({ tasks }: TasksListProps) {
                 <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Приоритет</th>
                 <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">CI</th>
                 <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Обновлено</th>
+                {onRunEngineer && <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Действия</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -114,6 +118,20 @@ export function TasksList({ tasks }: TasksListProps) {
                   <td className="px-5 py-4 text-sm text-neutral-500">
                     {new Date(task.updatedAt).toLocaleDateString('ru-RU')}
                   </td>
+                  {onRunEngineer && (
+                    <td className="px-5 py-4">
+                      {(task.status === 'pending' || task.status === 'draft') ? (
+                        <button
+                          onClick={() => onRunEngineer(task.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                        >
+                          🤖 Запустить
+                        </button>
+                      ) : (
+                        <span className="text-neutral-300">—</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
