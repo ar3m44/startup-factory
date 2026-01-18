@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/Dashboard/Header';
 import { StatsGrid } from '@/components/Dashboard/StatsGrid';
 import { SignalCard } from '@/components/Cards/SignalCard';
@@ -190,9 +191,9 @@ export default function FactoryPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Ventures</h2>
-              <span className="text-sm text-gray-500">
-                {state.ventures.length} total
-              </span>
+              <Link href="/factory/ventures" className="text-sm text-blue-600 hover:text-blue-700">
+                View all →
+              </Link>
             </div>
 
             <div className="space-y-4">
