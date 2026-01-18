@@ -88,6 +88,23 @@ jobs:
             automated
           draft: false
 
+      - name: Enable Auto-merge
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔄 Enabling auto-merge for PR..."
+          # Wait for PR to be created
+          sleep 5
+          # Get PR number for this branch
+          PR_NUMBER=$(gh pr list --head "task/${{ inputs.taskId }}" --json number --jq '.[0].number')
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr merge "$PR_NUMBER" --auto --squash
+            echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+          else
+            echo "⚠️ Could not find PR for branch task/${{ inputs.taskId }}"
+          fi
+
       - name: Comment on failure
         if: failure()
         run: |
