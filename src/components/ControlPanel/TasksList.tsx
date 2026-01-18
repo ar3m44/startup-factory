@@ -11,6 +11,19 @@ interface TasksListProps {
   tasks: FixtureTask[];
 }
 
+const statusLabels: Record<string, string> = {
+  draft: 'Черновик',
+  in_progress: 'В работе',
+  done: 'Готово',
+  failed: 'Ошибка',
+};
+
+const ciLabels: Record<string, string> = {
+  pending: 'Ожидание',
+  success: 'Успех',
+  failure: 'Ошибка',
+};
+
 export function TasksList({ tasks }: TasksListProps) {
   const [filteredTasks, setFilteredTasks] = useState(tasks);
 
@@ -34,70 +47,72 @@ export function TasksList({ tasks }: TasksListProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <SearchFilter
-          placeholder="Search tasks..."
+          placeholder="Поиск задач..."
           onSearch={handleSearch}
         />
         <span className="text-sm text-neutral-500">
-          {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
+          {filteredTasks.length} {filteredTasks.length === 1 ? 'задача' : 'задач'}
         </span>
       </div>
 
       {filteredTasks.length === 0 ? (
         <EmptyState
-          title="No tasks found"
-          description="Try adjusting your search"
+          title="Задачи не найдены"
+          description="Попробуйте изменить поисковый запрос"
           icon="📋"
         />
       ) : (
-        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden">
+        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 uppercase">Task</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 uppercase">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 uppercase">Priority</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 uppercase">CI</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-neutral-500 uppercase">Updated</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Задача</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Статус</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Приоритет</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">CI</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Обновлено</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-neutral-100">
               {filteredTasks.map((task) => (
-                <tr key={task.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
-                  <td className="px-4 py-3">
+                <tr key={task.id} className="hover:bg-neutral-50 transition-colors">
+                  <td className="px-5 py-4">
                     <Link
                       href={`/factory/tasks/${task.id}`}
-                      className="block"
+                      className="block group"
                     >
-                      <span className="font-mono text-sm text-neutral-500">{task.id}</span>
-                      <span className="block text-neutral-900 hover:text-blue-600">{task.title}</span>
+                      <span className="font-mono text-xs text-neutral-400">{task.id}</span>
+                      <span className="block text-neutral-900 font-medium group-hover:text-blue-600 transition-colors">
+                        {task.title}
+                      </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4">
                     <StatusBadge
-                      label={task.status.replace('_', ' ')}
+                      label={statusLabels[task.status] || task.status}
                       variant={getTaskStatusVariant(task.status)}
                     />
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-sm font-medium ${
-                      task.priority === 'P0' ? 'text-red-600' :
-                      task.priority === 'P1' ? 'text-yellow-600' : 'text-neutral-500'
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                      task.priority === 'P0' ? 'bg-red-100 text-red-700' :
+                      task.priority === 'P1' ? 'bg-yellow-100 text-yellow-700' : 'bg-neutral-100 text-neutral-600'
                     }`}>
                       {task.priority}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4">
                     {task.ciStatus ? (
                       <StatusBadge
-                        label={task.ciStatus}
+                        label={ciLabels[task.ciStatus] || task.ciStatus}
                         variant={getCIStatusVariant(task.ciStatus)}
                       />
                     ) : (
-                      <span className="text-neutral-400">—</span>
+                      <span className="text-neutral-300">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-neutral-500">
-                    {new Date(task.updatedAt).toLocaleDateString()}
+                  <td className="px-5 py-4 text-sm text-neutral-500">
+                    {new Date(task.updatedAt).toLocaleDateString('ru-RU')}
                   </td>
                 </tr>
               ))}

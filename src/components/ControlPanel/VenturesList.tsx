@@ -11,6 +11,14 @@ interface VenturesListProps {
   ventures: Venture[];
 }
 
+const statusLabels: Record<string, string> = {
+  active: 'Активен',
+  building: 'В разработке',
+  launched: 'Запущен',
+  killed: 'Закрыт',
+  validating: 'Проверка',
+};
+
 export function VenturesList({ ventures }: VenturesListProps) {
   const [filteredVentures, setFilteredVentures] = useState(ventures);
 
@@ -33,18 +41,18 @@ export function VenturesList({ ventures }: VenturesListProps) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <SearchFilter
-          placeholder="Search ventures..."
+          placeholder="Поиск проектов..."
           onSearch={handleSearch}
         />
         <span className="text-sm text-neutral-500">
-          {filteredVentures.length} venture{filteredVentures.length !== 1 ? 's' : ''}
+          {filteredVentures.length} {filteredVentures.length === 1 ? 'проект' : 'проектов'}
         </span>
       </div>
 
       {filteredVentures.length === 0 ? (
         <EmptyState
-          title="No ventures found"
-          description="Try adjusting your search or create a new venture"
+          title="Проекты не найдены"
+          description="Попробуйте изменить поисковый запрос"
           icon="🚀"
         />
       ) : (
@@ -53,20 +61,20 @@ export function VenturesList({ ventures }: VenturesListProps) {
             <Link
               key={venture.id}
               href={`/factory/ventures/${venture.id}`}
-              className="block p-4 bg-white border border-neutral-200 rounded-lg
-                       hover:border-neutral-300 hover:shadow-sm transition-all"
+              className="block bg-white border border-neutral-200 rounded-2xl p-5
+                       hover:border-neutral-300 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-medium text-neutral-900 truncate">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-neutral-900 truncate">
                       {venture.name}
                     </h3>
                     <StatusBadge
-                      label={venture.status}
+                      label={statusLabels[venture.status] || venture.status}
                       variant={getVentureStatusVariant(venture.status)}
                     />
-                    <span className="text-xs px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded">
+                    <span className="text-xs px-2 py-1 bg-neutral-100 text-neutral-600 rounded-full font-medium">
                       {venture.track}
                     </span>
                   </div>
@@ -74,16 +82,19 @@ export function VenturesList({ ventures }: VenturesListProps) {
                     {venture.blueprint?.tagline || venture.slug}
                   </p>
                 </div>
-                <div className="text-right ml-4">
-                  <div className="text-sm font-medium text-neutral-900">
-                    {venture.metrics?.mrr?.toLocaleString() || 0} RUB
+                <div className="text-right ml-6 flex-shrink-0">
+                  <div className="text-lg font-semibold text-neutral-900">
+                    {(venture.metrics?.mrr || 0).toLocaleString('ru-RU')} ₽
                   </div>
                   <div className="text-xs text-neutral-500">MRR</div>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-4 text-xs text-neutral-500">
-                <span>ID: {venture.id}</span>
-                <span>Created: {new Date(venture.createdAt).toLocaleDateString()}</span>
+              <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-6 text-xs text-neutral-500">
+                <span className="font-mono">{venture.id}</span>
+                <span>Создан: {new Date(venture.createdAt).toLocaleDateString('ru-RU')}</span>
+                {venture.metrics?.totalUsers !== undefined && venture.metrics.totalUsers > 0 && (
+                  <span>{venture.metrics.totalUsers} пользователей</span>
+                )}
               </div>
             </Link>
           ))}
