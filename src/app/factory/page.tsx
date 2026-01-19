@@ -5,13 +5,34 @@ import Link from 'next/link';
 import { Header } from '@/components/Dashboard/Header';
 import { StatsGrid } from '@/components/Dashboard/StatsGrid';
 import { Button } from '@/components/UI/Button';
+import { Modal } from '@/components/UI/Modal';
 import { useToast } from '@/components/UI/Toast';
 import { SkeletonDashboard } from '@/components/UI/Skeleton';
-import type { Signal, FactoryState, Venture } from '@/lib/types';
+import type { Signal, FactoryState, Venture, MonitorReport } from '@/lib/types';
 
 interface StateResponse {
   success: boolean;
   state: FactoryState;
+}
+
+interface MonitorResponse {
+  success: boolean;
+  summary: {
+    total: number;
+    healthy: number;
+    warning: number;
+    pivot: number;
+    kill: number;
+    totalMRR: number;
+    totalRevenue: number;
+  };
+  needsAttention: Array<{
+    ventureId: string;
+    recommendation: string;
+    reasoning: string;
+    actionItems: string[];
+  }>;
+  reports: MonitorReport[];
 }
 
 const statusLabels: Record<string, string> = {
@@ -21,6 +42,8 @@ const statusLabels: Record<string, string> = {
   active: 'Активен',
   building: 'В разработке',
   launched: 'Запущен',
+  validating: 'Проверка',
+  paused: 'Приостановлен',
   killed: 'Закрыт',
 };
 
@@ -31,13 +54,34 @@ const statusColors: Record<string, string> = {
   active: 'bg-blue-100 text-blue-700',
   building: 'bg-purple-100 text-purple-700',
   launched: 'bg-green-100 text-green-700',
-  killed: 'bg-neutral-100 text-neutral-700',
+  validating: 'bg-yellow-100 text-yellow-700',
+  paused: 'bg-neutral-100 text-neutral-700',
+  killed: 'bg-red-100 text-red-700',
+};
+
+const recommendationColors: Record<string, string> = {
+  CONTINUE: 'bg-green-100 text-green-700',
+  WARNING: 'bg-yellow-100 text-yellow-700',
+  PIVOT: 'bg-orange-100 text-orange-700',
+  KILL: 'bg-red-100 text-red-700',
+};
+
+const recommendationLabels: Record<string, string> = {
+  CONTINUE: 'Продолжать',
+  WARNING: 'Внимание',
+  PIVOT: 'Пивот',
+  KILL: 'Закрыть',
 };
 
 export default function FactoryPage() {
   const [state, setState] = useState<FactoryState | null>(null);
   const [loading, setLoading] = useState(true);
   const [scoutLoading, setScoutLoading] = useState(false);
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorResult, setMonitorResult] = useState<MonitorResponse | null>(null);
+  const [showMonitorModal, setShowMonitorModal] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
+  const [validatingSignalId, setValidatingSignalId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -76,8 +120,28 @@ export default function FactoryPage() {
     }
   };
 
+  const runMonitor = async () => {
+    try {
+      setMonitorLoading(true);
+      const res = await fetch('/api/monitor', { method: 'POST' });
+      const data: MonitorResponse = await res.json();
+      if (data.success) {
+        setMonitorResult(data);
+        setShowMonitorModal(true);
+        showToast(`Monitor проанализировал ${data.summary.total} проектов`, 'success');
+        await loadState();
+      }
+    } catch (error) {
+      console.error('Failed to run Monitor:', error);
+      showToast('Не удалось запустить Monitor', 'error');
+    } finally {
+      setMonitorLoading(false);
+    }
+  };
+
   const validateSignal = async (signalId: string) => {
     try {
+      setValidatingSignalId(signalId);
       const res = await fetch('/api/validator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,11 +151,14 @@ export default function FactoryPage() {
       if (data.success) {
         const { validation } = data;
         showToast(`Валидация завершена: ${validation.decision}`, validation.decision === 'GO' ? 'success' : 'warning');
+        setSelectedSignal(null);
         await loadState();
       }
     } catch (error) {
       console.error('Failed to validate signal:', error);
       showToast('Не удалось провести валидацию', 'error');
+    } finally {
+      setValidatingSignalId(null);
     }
   };
 
@@ -125,31 +192,72 @@ export default function FactoryPage() {
         {/* Stats */}
         <StatsGrid state={state} />
 
-        {/* Scout Action */}
-        <div className="mt-8 bg-white rounded-2xl p-6 border border-neutral-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-900 mb-1">
-                Запустить Scout
-              </h2>
-              <p className="text-sm text-neutral-500">
-                Автоматический поиск новых бизнес-возможностей
-              </p>
-              {state.lastScoutRun && (
-                <p className="text-xs text-neutral-400 mt-2">
-                  Последний запуск: {new Date(state.lastScoutRun).toLocaleString('ru-RU')}
+        {/* Agent Actions */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Scout Action */}
+          <div className="bg-white rounded-2xl p-6 border border-neutral-200 hover:border-blue-200 hover:shadow-md transition-all">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-neutral-900 mb-1">
+                  Scout Agent
+                </h2>
+                <p className="text-sm text-neutral-500 mb-3">
+                  Автоматический поиск новых бизнес-возможностей и трендов
                 </p>
-              )}
+                {state.lastScoutRun && (
+                  <p className="text-xs text-neutral-400 mb-3">
+                    Последний запуск: {new Date(state.lastScoutRun).toLocaleString('ru-RU')}
+                  </p>
+                )}
+                <Button
+                  variant="primary"
+                  size="md"
+                  loading={scoutLoading}
+                  disabled={scoutLoading}
+                  onClick={runScout}
+                >
+                  {scoutLoading ? 'Поиск...' : 'Запустить Scout'}
+                </Button>
+              </div>
             </div>
-            <Button
-              variant="primary"
-              size="lg"
-              loading={scoutLoading}
-              disabled={scoutLoading}
-              onClick={runScout}
-            >
-              {scoutLoading ? 'Поиск...' : 'Запустить Scout'}
-            </Button>
+          </div>
+
+          {/* Monitor Action */}
+          <div className="bg-white rounded-2xl p-6 border border-neutral-200 hover:border-green-200 hover:shadow-md transition-all">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-green-50 rounded-xl">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-neutral-900 mb-1">
+                  Monitor Agent
+                </h2>
+                <p className="text-sm text-neutral-500 mb-3">
+                  Анализ метрик проектов и рекомендации по развитию
+                </p>
+                {state.lastMonitorRun && (
+                  <p className="text-xs text-neutral-400 mb-3">
+                    Последний запуск: {new Date(state.lastMonitorRun).toLocaleString('ru-RU')}
+                  </p>
+                )}
+                <Button
+                  variant="secondary"
+                  size="md"
+                  loading={monitorLoading}
+                  disabled={monitorLoading || state.ventures.length === 0}
+                  onClick={runMonitor}
+                >
+                  {monitorLoading ? 'Анализ...' : 'Запустить Monitor'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -175,24 +283,26 @@ export default function FactoryPage() {
                 </div>
               ) : (
                 state.signals.slice(0, 5).map((signal: Signal) => (
-                  <div key={signal.id} className="px-6 py-4 hover:bg-neutral-50 transition-colors">
+                  <div
+                    key={signal.id}
+                    className="px-6 py-4 hover:bg-neutral-50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedSignal(signal)}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-neutral-900 truncate">{signal.problem}</p>
-                        <p className="text-sm text-neutral-500 mt-0.5">{signal.source}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-neutral-500">{signal.source}</span>
+                          <span className="text-xs text-neutral-300">•</span>
+                          <span className="text-xs text-neutral-500">
+                            Score: {signal.confidenceScore}%
+                          </span>
+                        </div>
                       </div>
                       <div className="ml-4 flex items-center gap-2">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[signal.status] || 'bg-neutral-100 text-neutral-600'}`}>
                           {statusLabels[signal.status] || signal.status}
                         </span>
-                        {signal.status === 'pending_validation' && (
-                          <button
-                            onClick={() => validateSignal(signal.id)}
-                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            Проверить
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -308,26 +418,210 @@ export default function FactoryPage() {
             </div>
           </Link>
 
-          <a
-            href="https://github.com/ar3m44/startup-factory"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/factory/engineer-runs"
             className="bg-white rounded-xl p-4 border border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition-all group"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-neutral-100 rounded-lg group-hover:bg-neutral-200 transition-colors">
-                <svg className="w-5 h-5 text-neutral-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
               <div>
-                <p className="font-medium text-neutral-900">GitHub</p>
-                <p className="text-xs text-neutral-500">Исходный код</p>
+                <p className="font-medium text-neutral-900">Engineer</p>
+                <p className="text-xs text-neutral-500">История AI запусков</p>
               </div>
             </div>
-          </a>
+          </Link>
         </div>
       </main>
+
+      {/* Signal Detail Modal */}
+      <Modal
+        isOpen={!!selectedSignal}
+        onClose={() => setSelectedSignal(null)}
+        title="Детали сигнала"
+        size="md"
+      >
+        {selectedSignal && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                {selectedSignal.problem}
+              </h3>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[selectedSignal.status]}`}>
+                  {statusLabels[selectedSignal.status]}
+                </span>
+                <span className="text-sm text-neutral-500">
+                  Confidence: {selectedSignal.confidenceScore}%
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-neutral-50 rounded-lg p-4">
+                <p className="text-xs text-neutral-500 mb-1">Источник</p>
+                <p className="font-medium text-neutral-900">{selectedSignal.source}</p>
+              </div>
+              <div className="bg-neutral-50 rounded-lg p-4">
+                <p className="text-xs text-neutral-500 mb-1">Дата</p>
+                <p className="font-medium text-neutral-900">
+                  {new Date(selectedSignal.date).toLocaleDateString('ru-RU')}
+                </p>
+              </div>
+            </div>
+
+            {selectedSignal.mvpDescription && (
+              <div>
+                <p className="text-sm font-medium text-neutral-700 mb-2">MVP решение</p>
+                <p className="text-neutral-600">{selectedSignal.mvpDescription}</p>
+              </div>
+            )}
+
+            {selectedSignal.targetAudience && (
+              <div>
+                <p className="text-sm font-medium text-neutral-700 mb-2">Целевая аудитория</p>
+                <p className="text-neutral-600">{selectedSignal.targetAudience}</p>
+              </div>
+            )}
+
+            {selectedSignal.tam && (
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-xs text-green-600 mb-1">Потенциальный рынок (TAM)</p>
+                <p className="text-lg font-semibold text-green-700">
+                  {selectedSignal.tam}
+                </p>
+              </div>
+            )}
+
+            {selectedSignal.sourceUrl && (
+              <a
+                href={selectedSignal.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-sm text-blue-600 hover:text-blue-700"
+              >
+                Открыть источник →
+              </a>
+            )}
+
+            {selectedSignal.status === 'pending_validation' && (
+              <div className="pt-4 border-t border-neutral-200">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  loading={validatingSignalId === selectedSignal.id}
+                  disabled={validatingSignalId === selectedSignal.id}
+                  onClick={() => validateSignal(selectedSignal.id)}
+                  className="w-full"
+                >
+                  {validatingSignalId === selectedSignal.id ? 'Проверка...' : 'Запустить валидацию'}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Monitor Results Modal */}
+      <Modal
+        isOpen={showMonitorModal}
+        onClose={() => setShowMonitorModal(false)}
+        title="Результаты Monitor Agent"
+        size="lg"
+      >
+        {monitorResult && (
+          <div className="space-y-6">
+            {/* Summary */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-green-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-green-700">{monitorResult.summary.healthy}</p>
+                <p className="text-xs text-green-600">Здоровых</p>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-yellow-700">{monitorResult.summary.warning}</p>
+                <p className="text-xs text-yellow-600">Предупреждений</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-orange-700">{monitorResult.summary.pivot}</p>
+                <p className="text-xs text-orange-600">Нужен пивот</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-red-700">{monitorResult.summary.kill}</p>
+                <p className="text-xs text-red-600">Закрыть</p>
+              </div>
+            </div>
+
+            {/* Total Metrics */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-neutral-50 rounded-lg p-4">
+                <p className="text-xs text-neutral-500 mb-1">Общий MRR</p>
+                <p className="text-xl font-bold text-neutral-900">
+                  {monitorResult.summary.totalMRR.toLocaleString('ru-RU')} ₽
+                </p>
+              </div>
+              <div className="bg-neutral-50 rounded-lg p-4">
+                <p className="text-xs text-neutral-500 mb-1">Общий доход</p>
+                <p className="text-xl font-bold text-neutral-900">
+                  {monitorResult.summary.totalRevenue.toLocaleString('ru-RU')} ₽
+                </p>
+              </div>
+            </div>
+
+            {/* Needs Attention */}
+            {monitorResult.needsAttention.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-neutral-900 mb-3">Требуют внимания</h3>
+                <div className="space-y-3">
+                  {monitorResult.needsAttention.map((item) => {
+                    const venture = state?.ventures.find(v => v.id === item.ventureId);
+                    return (
+                      <div key={item.ventureId} className="bg-neutral-50 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <p className="font-medium text-neutral-900">
+                            {venture?.name || item.ventureId}
+                          </p>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${recommendationColors[item.recommendation]}`}>
+                            {recommendationLabels[item.recommendation]}
+                          </span>
+                        </div>
+                        <p className="text-sm text-neutral-600 mb-3">{item.reasoning}</p>
+                        {item.actionItems.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500 mb-1">Рекомендации:</p>
+                            <ul className="text-sm text-neutral-600 space-y-1">
+                              {item.actionItems.map((action, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-neutral-400">•</span>
+                                  {action}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {monitorResult.needsAttention.length === 0 && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium text-neutral-900">Все проекты в норме!</p>
+                <p className="text-sm text-neutral-500">Нет проектов, требующих срочного внимания</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

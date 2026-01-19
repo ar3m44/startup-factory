@@ -126,6 +126,16 @@ CREATE TABLE IF NOT EXISTS engineer_runs (
   FOREIGN KEY (task_id) REFERENCES tasks(id)
 );
 
+-- Analytics events table
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  venture_id TEXT,
+  data TEXT, -- JSON object
+  timestamp TEXT NOT NULL,
+  FOREIGN KEY (venture_id) REFERENCES ventures(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
 CREATE INDEX IF NOT EXISTS idx_signals_date ON signals(date);
@@ -138,3 +148,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_entries_actor ON audit_entries(actor);
 CREATE INDEX IF NOT EXISTS idx_engineer_runs_task_id ON engineer_runs(task_id);
 CREATE INDEX IF NOT EXISTS idx_engineer_runs_status ON engineer_runs(status);
 CREATE INDEX IF NOT EXISTS idx_engineer_runs_started_at ON engineer_runs(started_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_venture_id ON analytics_events(venture_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_timestamp ON analytics_events(timestamp);
