@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { SearchFilter } from './SearchFilter';
 import { EmptyState } from './EmptyState';
 import { StatusBadge, getTaskStatusVariant, getCIStatusVariant } from './StatusBadge';
+import { Pagination } from '@/components/UI/Pagination';
 import type { FixtureTask } from '@/lib/fixtures/factory-fixtures';
+
+const ITEMS_PER_PAGE = 10;
 
 interface TasksListProps {
   tasks: FixtureTask[];
@@ -29,22 +32,30 @@ const ciLabels: Record<string, string> = {
 
 export function TasksList({ tasks, onRunEngineer }: TasksListProps) {
   const [filteredTasks, setFilteredTasks] = useState(tasks);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleSearch = useCallback((query: string) => {
     if (!query.trim()) {
       setFilteredTasks(tasks);
-      return;
+    } else {
+      const lower = query.toLowerCase();
+      setFilteredTasks(
+        tasks.filter(t =>
+          t.id.toLowerCase().includes(lower) ||
+          t.title.toLowerCase().includes(lower) ||
+          t.status.toLowerCase().includes(lower) ||
+          t.priority.toLowerCase().includes(lower)
+        )
+      );
     }
-    const lower = query.toLowerCase();
-    setFilteredTasks(
-      tasks.filter(t =>
-        t.id.toLowerCase().includes(lower) ||
-        t.title.toLowerCase().includes(lower) ||
-        t.status.toLowerCase().includes(lower) ||
-        t.priority.toLowerCase().includes(lower)
-      )
-    );
+    setCurrentPage(1); // Reset to page 1 on search
   }, [tasks]);
+
+  const totalPages = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE);
+  const paginatedTasks = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTasks.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredTasks, currentPage]);
 
   return (
     <div>
@@ -78,7 +89,7 @@ export function TasksList({ tasks, onRunEngineer }: TasksListProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {filteredTasks.map((task) => (
+              {paginatedTasks.map((task) => (
                 <tr key={task.id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-5 py-4">
                     <Link
@@ -136,6 +147,17 @@ export function TasksList({ tasks, onRunEngineer }: TasksListProps) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </div>
