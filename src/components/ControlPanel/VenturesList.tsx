@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { SearchFilter } from './SearchFilter';
 import { EmptyState } from './EmptyState';
 import { StatusBadge, getVentureStatusVariant } from './StatusBadge';
+import { Pagination } from '@/components/UI/Pagination';
 import type { Venture } from '@/lib/types';
+
+const ITEMS_PER_PAGE = 10;
 
 interface VenturesListProps {
   ventures: Venture[];
@@ -21,21 +24,29 @@ const statusLabels: Record<string, string> = {
 
 export function VenturesList({ ventures }: VenturesListProps) {
   const [filteredVentures, setFilteredVentures] = useState(ventures);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleSearch = useCallback((query: string) => {
     if (!query.trim()) {
       setFilteredVentures(ventures);
-      return;
+    } else {
+      const lower = query.toLowerCase();
+      setFilteredVentures(
+        ventures.filter(v =>
+          v.name.toLowerCase().includes(lower) ||
+          v.id.toLowerCase().includes(lower) ||
+          v.status.toLowerCase().includes(lower)
+        )
+      );
     }
-    const lower = query.toLowerCase();
-    setFilteredVentures(
-      ventures.filter(v =>
-        v.name.toLowerCase().includes(lower) ||
-        v.id.toLowerCase().includes(lower) ||
-        v.status.toLowerCase().includes(lower)
-      )
-    );
+    setCurrentPage(1);
   }, [ventures]);
+
+  const totalPages = Math.ceil(filteredVentures.length / ITEMS_PER_PAGE);
+  const paginatedVentures = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredVentures.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredVentures, currentPage]);
 
   return (
     <div>
@@ -57,14 +68,15 @@ export function VenturesList({ ventures }: VenturesListProps) {
         />
       ) : (
         <div className="space-y-3">
-          {filteredVentures.map((venture) => (
+          {paginatedVentures.map((venture) => (
             <Link
               key={venture.id}
               href={`/factory/ventures/${venture.id}`}
-              className="block bg-white border border-neutral-200 rounded-2xl p-5
+              className="block bg-white border border-neutral-200 rounded-2xl p-4 sm:p-5
                        hover:border-neutral-300 hover:shadow-md transition-all duration-200"
             >
-              <div className="flex items-start justify-between">
+              {/* Desktop layout */}
+              <div className="hidden sm:flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-neutral-900 truncate">
@@ -89,15 +101,53 @@ export function VenturesList({ ventures }: VenturesListProps) {
                   <div className="text-xs text-neutral-500">MRR</div>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center gap-6 text-xs text-neutral-500">
+
+              {/* Mobile layout */}
+              <div className="sm:hidden">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="font-semibold text-neutral-900 truncate flex-1">
+                    {venture.name}
+                  </h3>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-base font-semibold text-neutral-900">
+                      {(venture.metrics?.mrr || 0).toLocaleString('ru-RU')} ₽
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-neutral-500 truncate mb-2">
+                  {venture.blueprint?.tagline || venture.slug}
+                </p>
+                <div className="flex items-center flex-wrap gap-2">
+                  <StatusBadge
+                    label={statusLabels[venture.status] || venture.status}
+                    variant={getVentureStatusVariant(venture.status)}
+                  />
+                  <span className="text-xs px-2 py-1 bg-neutral-100 text-neutral-600 rounded-full font-medium">
+                    {venture.track}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center flex-wrap gap-3 sm:gap-6 text-xs text-neutral-500">
                 <span className="font-mono">{venture.id}</span>
                 <span>Создан: {new Date(venture.createdAt).toLocaleDateString('ru-RU')}</span>
                 {venture.metrics?.totalUsers !== undefined && venture.metrics.totalUsers > 0 && (
-                  <span>{venture.metrics.totalUsers} пользователей</span>
+                  <span>{venture.metrics.totalUsers} польз.</span>
                 )}
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </div>

@@ -373,6 +373,100 @@ export function createAuditEntry(entry: DbAuditEntry): DbAuditEntry {
 }
 
 // ============================================================================
+// Engineer Runs CRUD
+// ============================================================================
+
+export interface DbEngineerRun {
+  id: string;
+  taskId: string;
+  startedAt: string;
+  finishedAt?: string;
+  status: 'running' | 'success' | 'failed' | 'cancelled';
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  filesCreated?: string[];
+  filesUpdated?: string[];
+  filesDeleted?: string[];
+  errorMessage?: string;
+  logs?: Array<{ timestamp: string; level: string; message: string }>;
+}
+
+export function getEngineerRunsByTask(taskId: string): DbEngineerRun[] {
+  const database = getDb();
+  const rows = database.prepare('SELECT * FROM engineer_runs WHERE task_id = ? ORDER BY started_at DESC').all(taskId) as EngineerRunRow[];
+  return rows.map(rowToEngineerRun);
+}
+
+export function getEngineerRunById(id: string): DbEngineerRun | null {
+  const database = getDb();
+  const row = database.prepare('SELECT * FROM engineer_runs WHERE id = ?').get(id) as EngineerRunRow | undefined;
+  return row ? rowToEngineerRun(row) : null;
+}
+
+export function getRecentEngineerRuns(limit = 50): DbEngineerRun[] {
+  const database = getDb();
+  const rows = database.prepare('SELECT * FROM engineer_runs ORDER BY started_at DESC LIMIT ?').all(limit) as EngineerRunRow[];
+  return rows.map(rowToEngineerRun);
+}
+
+export function createEngineerRun(run: DbEngineerRun): DbEngineerRun {
+  const database = getDb();
+  database.prepare(`
+    INSERT INTO engineer_runs (
+      id, task_id, started_at, finished_at, status, model,
+      prompt_tokens, completion_tokens, files_created, files_updated, files_deleted,
+      error_message, logs
+    ) VALUES (
+      @id, @taskId, @startedAt, @finishedAt, @status, @model,
+      @promptTokens, @completionTokens, @filesCreated, @filesUpdated, @filesDeleted,
+      @errorMessage, @logs
+    )
+  `).run({
+    id: run.id,
+    taskId: run.taskId,
+    startedAt: run.startedAt,
+    finishedAt: run.finishedAt || null,
+    status: run.status,
+    model: run.model,
+    promptTokens: run.promptTokens,
+    completionTokens: run.completionTokens,
+    filesCreated: run.filesCreated ? JSON.stringify(run.filesCreated) : null,
+    filesUpdated: run.filesUpdated ? JSON.stringify(run.filesUpdated) : null,
+    filesDeleted: run.filesDeleted ? JSON.stringify(run.filesDeleted) : null,
+    errorMessage: run.errorMessage || null,
+    logs: run.logs ? JSON.stringify(run.logs) : null,
+  });
+  return run;
+}
+
+export function updateEngineerRun(id: string, updates: Partial<DbEngineerRun>): void {
+  const database = getDb();
+  const current = getEngineerRunById(id);
+  if (!current) return;
+
+  const merged = { ...current, ...updates };
+  database.prepare(`
+    UPDATE engineer_runs SET
+      finished_at = ?, status = ?, prompt_tokens = ?, completion_tokens = ?,
+      files_created = ?, files_updated = ?, files_deleted = ?,
+      error_message = ?, logs = ?
+    WHERE id = ?
+  `).run(
+    merged.finishedAt || null,
+    merged.status,
+    merged.promptTokens,
+    merged.completionTokens,
+    merged.filesCreated ? JSON.stringify(merged.filesCreated) : null,
+    merged.filesUpdated ? JSON.stringify(merged.filesUpdated) : null,
+    merged.filesDeleted ? JSON.stringify(merged.filesDeleted) : null,
+    merged.errorMessage || null,
+    merged.logs ? JSON.stringify(merged.logs) : null,
+    id
+  );
+}
+
+// ============================================================================
 // Factory State
 // ============================================================================
 
@@ -564,6 +658,22 @@ interface FactoryStateRow {
   budget_last_reset: string;
 }
 
+interface EngineerRunRow {
+  id: string;
+  task_id: string;
+  started_at: string;
+  finished_at: string | null;
+  status: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  files_created: string | null;
+  files_updated: string | null;
+  files_deleted: string | null;
+  error_message: string | null;
+  logs: string | null;
+}
+
 function rowToSignal(row: SignalRow): Signal {
   return {
     id: row.id,
@@ -675,5 +785,23 @@ function rowToAuditEntry(row: AuditRow): DbAuditEntry {
     result: row.result || undefined,
     data: row.data ? safeJsonParse<Record<string, unknown>>(row.data, {}) : undefined,
     metadata: row.metadata ? safeJsonParse<Record<string, unknown>>(row.metadata, {}) : undefined,
+  };
+}
+
+function rowToEngineerRun(row: EngineerRunRow): DbEngineerRun {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at || undefined,
+    status: row.status as DbEngineerRun['status'],
+    model: row.model,
+    promptTokens: row.prompt_tokens,
+    completionTokens: row.completion_tokens,
+    filesCreated: row.files_created ? safeJsonParse<string[]>(row.files_created, []) : undefined,
+    filesUpdated: row.files_updated ? safeJsonParse<string[]>(row.files_updated, []) : undefined,
+    filesDeleted: row.files_deleted ? safeJsonParse<string[]>(row.files_deleted, []) : undefined,
+    errorMessage: row.error_message || undefined,
+    logs: row.logs ? safeJsonParse<DbEngineerRun['logs']>(row.logs, []) : undefined,
   };
 }

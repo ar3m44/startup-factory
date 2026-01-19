@@ -108,6 +108,24 @@ CREATE TABLE IF NOT EXISTS factory_state (
   budget_last_reset TEXT NOT NULL
 );
 
+-- Engineer runs table (logs all AI engineer executions)
+CREATE TABLE IF NOT EXISTS engineer_runs (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'cancelled')),
+  model TEXT NOT NULL,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  files_created TEXT, -- JSON array
+  files_updated TEXT, -- JSON array
+  files_deleted TEXT, -- JSON array
+  error_message TEXT,
+  logs TEXT, -- JSON array of log entries
+  FOREIGN KEY (task_id) REFERENCES tasks(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status);
 CREATE INDEX IF NOT EXISTS idx_signals_date ON signals(date);
@@ -117,3 +135,6 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_audit_entries_timestamp ON audit_entries(timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_entries_venture_id ON audit_entries(venture_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entries_actor ON audit_entries(actor);
+CREATE INDEX IF NOT EXISTS idx_engineer_runs_task_id ON engineer_runs(task_id);
+CREATE INDEX IF NOT EXISTS idx_engineer_runs_status ON engineer_runs(status);
+CREATE INDEX IF NOT EXISTS idx_engineer_runs_started_at ON engineer_runs(started_at);

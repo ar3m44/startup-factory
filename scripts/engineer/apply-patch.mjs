@@ -6,17 +6,37 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
- * Parse Claude response and apply file changes
- *
- * @param {string} response - Claude API response
- * @param {string} projectRoot - Project root directory
- * @returns {Promise<{created: string[], updated: string[], deleted: string[]}>}
+ * Validate a file path for security
+ * @param {string} filePath - File path to validate
+ * @returns {{valid: boolean, error?: string}}
  */
-export default async function applyPatch(response, projectRoot) {
-  const changes = {
-    created: [],
-    updated: [],
-    deleted: [],
+function validateFilePath(filePath) {
+  // Prevent directory traversal attacks
+  if (filePath.includes('..') || filePath.startsWith('/')) {
+    return { valid: false, error: 'Invalid path: directory traversal detected' };
+  }
+
+  // Prevent modifying sensitive files
+  const sensitivePatterns = ['.env', '.git/', 'node_modules/', '.npmrc', '.yarnrc'];
+  for (const pattern of sensitivePatterns) {
+    if (filePath.includes(pattern)) {
+      return { valid: false, error: `Invalid path: cannot modify ${pattern}` };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Parse Claude response and extract all operations for validation
+ * @param {string} response - Claude API response
+ * @returns {{creates: Array, edits: Array, deletes: Array}}
+ */
+function parseOperations(response) {
+  const operations = {
+    creates: [],
+    edits: [],
+    deletes: [],
   };
 
   // Parse CREATE operations
@@ -24,35 +44,178 @@ export default async function applyPatch(response, projectRoot) {
   let match;
 
   while ((match = createRegex.exec(response)) !== null) {
-    const filePath = match[1].trim();
-    const content = match[3].trim();
-
-    await createFile(projectRoot, filePath, content);
-    changes.created.push(filePath);
-    console.log(`  ✓ Created: ${filePath}`);
+    operations.creates.push({
+      filePath: match[1].trim(),
+      content: match[3].trim(),
+    });
   }
 
-  // Parse EDIT operations (unified diff format)
+  // Parse EDIT operations
   const editRegex = /### EDIT: (.+?)\n```patch\n([\s\S]+?)```/g;
 
   while ((match = editRegex.exec(response)) !== null) {
-    const filePath = match[1].trim();
-    const patchContent = match[2].trim();
-
-    await editFile(projectRoot, filePath, patchContent);
-    changes.updated.push(filePath);
-    console.log(`  ✓ Updated: ${filePath}`);
+    operations.edits.push({
+      filePath: match[1].trim(),
+      patchContent: match[2].trim(),
+    });
   }
 
   // Parse DELETE operations
   const deleteRegex = /### DELETE: (.+?)\n/g;
 
   while ((match = deleteRegex.exec(response)) !== null) {
-    const filePath = match[1].trim();
+    operations.deletes.push({
+      filePath: match[1].trim(),
+    });
+  }
 
-    await deleteFile(projectRoot, filePath);
-    changes.deleted.push(filePath);
-    console.log(`  ✓ Deleted: ${filePath}`);
+  return operations;
+}
+
+/**
+ * Validate all operations before applying
+ * @param {object} operations - Parsed operations
+ * @param {string} projectRoot - Project root directory
+ * @returns {Promise<{valid: boolean, errors: string[]}>}
+ */
+async function validateOperations(operations, projectRoot) {
+  const errors = [];
+
+  // Validate CREATE operations
+  for (const op of operations.creates) {
+    const validation = validateFilePath(op.filePath);
+    if (!validation.valid) {
+      errors.push(`CREATE ${op.filePath}: ${validation.error}`);
+      continue;
+    }
+
+    // Check if file already exists
+    const fullPath = path.join(projectRoot, op.filePath);
+    try {
+      await fs.access(fullPath);
+      errors.push(`CREATE ${op.filePath}: file already exists`);
+    } catch {
+      // File doesn't exist - this is expected for CREATE
+    }
+  }
+
+  // Validate EDIT operations
+  for (const op of operations.edits) {
+    const validation = validateFilePath(op.filePath);
+    if (!validation.valid) {
+      errors.push(`EDIT ${op.filePath}: ${validation.error}`);
+      continue;
+    }
+
+    // Check if file exists
+    const fullPath = path.join(projectRoot, op.filePath);
+    try {
+      await fs.access(fullPath);
+    } catch {
+      errors.push(`EDIT ${op.filePath}: file does not exist`);
+    }
+  }
+
+  // Validate DELETE operations
+  for (const op of operations.deletes) {
+    const validation = validateFilePath(op.filePath);
+    if (!validation.valid) {
+      errors.push(`DELETE ${op.filePath}: ${validation.error}`);
+      continue;
+    }
+
+    // Check if file exists
+    const fullPath = path.join(projectRoot, op.filePath);
+    try {
+      await fs.access(fullPath);
+    } catch {
+      // Warn but don't error - file might already be deleted
+      console.warn(`  ⚠️  DELETE ${op.filePath}: file does not exist`);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Parse Claude response and apply file changes
+ *
+ * @param {string} response - Claude API response
+ * @param {string} projectRoot - Project root directory
+ * @returns {Promise<{created: string[], updated: string[], deleted: string[], errors: string[]}>}
+ */
+export default async function applyPatch(response, projectRoot) {
+  const changes = {
+    created: [],
+    updated: [],
+    deleted: [],
+    errors: [],
+  };
+
+  // Parse all operations first
+  const operations = parseOperations(response);
+
+  const totalOps = operations.creates.length + operations.edits.length + operations.deletes.length;
+  if (totalOps === 0) {
+    console.log('  ℹ️  No file operations found in response');
+    return changes;
+  }
+
+  console.log(`  📋 Found ${totalOps} operations to apply`);
+
+  // Validate all operations before applying
+  const validation = await validateOperations(operations, projectRoot);
+  if (!validation.valid) {
+    console.error('  ❌ Validation failed:');
+    for (const error of validation.errors) {
+      console.error(`    - ${error}`);
+      changes.errors.push(error);
+    }
+    return changes;
+  }
+
+  console.log('  ✓ Validation passed');
+
+  // Apply CREATE operations
+  for (const op of operations.creates) {
+    try {
+      await createFile(projectRoot, op.filePath, op.content);
+      changes.created.push(op.filePath);
+      console.log(`  ✓ Created: ${op.filePath}`);
+    } catch (error) {
+      const msg = `CREATE ${op.filePath}: ${error.message}`;
+      changes.errors.push(msg);
+      console.error(`  ❌ ${msg}`);
+    }
+  }
+
+  // Apply EDIT operations
+  for (const op of operations.edits) {
+    try {
+      await editFile(projectRoot, op.filePath, op.patchContent);
+      changes.updated.push(op.filePath);
+      console.log(`  ✓ Updated: ${op.filePath}`);
+    } catch (error) {
+      const msg = `EDIT ${op.filePath}: ${error.message}`;
+      changes.errors.push(msg);
+      console.error(`  ❌ ${msg}`);
+    }
+  }
+
+  // Apply DELETE operations
+  for (const op of operations.deletes) {
+    try {
+      await deleteFile(projectRoot, op.filePath);
+      changes.deleted.push(op.filePath);
+      console.log(`  ✓ Deleted: ${op.filePath}`);
+    } catch (error) {
+      const msg = `DELETE ${op.filePath}: ${error.message}`;
+      changes.errors.push(msg);
+      console.error(`  ❌ ${msg}`);
+    }
   }
 
   return changes;

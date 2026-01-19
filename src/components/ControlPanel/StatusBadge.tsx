@@ -28,8 +28,12 @@ export function getTaskStatusVariant(status: string): BadgeVariant {
       return 'success';
     case 'in_progress':
       return 'warning';
+    case 'review':
+      return 'info';
     case 'failed':
       return 'error';
+    case 'draft':
+    case 'pending':
     default:
       return 'neutral';
   }

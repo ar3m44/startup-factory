@@ -76,78 +76,129 @@ export function TasksList({ tasks, onRunEngineer }: TasksListProps) {
           icon="📋"
         />
       ) : (
-        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50">
-                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Задача</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Статус</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Приоритет</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">CI</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Обновлено</th>
-                {onRunEngineer && <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Действия</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {paginatedTasks.map((task) => (
-                <tr key={task.id} className="hover:bg-neutral-50 transition-colors">
-                  <td className="px-5 py-4">
-                    <Link
-                      href={`/factory/tasks/${task.id}`}
-                      className="block group"
-                    >
-                      <span className="font-mono text-xs text-neutral-400">{task.id}</span>
-                      <span className="block text-neutral-900 font-medium group-hover:text-blue-600 transition-colors">
-                        {task.title}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="px-5 py-4">
-                    <StatusBadge
-                      label={statusLabels[task.status] || task.status}
-                      variant={getTaskStatusVariant(task.status)}
-                    />
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
-                      task.priority === 'P0' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'P1' ? 'bg-yellow-100 text-yellow-700' : 'bg-neutral-100 text-neutral-600'
-                    }`}>
-                      {task.priority}
+        <>
+          {/* Mobile: Card layout */}
+          <div className="lg:hidden space-y-3">
+            {paginatedTasks.map((task) => (
+              <div key={task.id} className="bg-white border border-neutral-200 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <Link
+                    href={`/factory/tasks/${task.id}`}
+                    className="block group flex-1 min-w-0"
+                  >
+                    <span className="font-mono text-xs text-neutral-400">{task.id}</span>
+                    <span className="block text-neutral-900 font-medium group-hover:text-blue-600 transition-colors truncate">
+                      {task.title}
                     </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    {task.ciStatus ? (
-                      <StatusBadge
-                        label={ciLabels[task.ciStatus] || task.ciStatus}
-                        variant={getCIStatusVariant(task.ciStatus)}
-                      />
-                    ) : (
-                      <span className="text-neutral-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-neutral-500">
+                  </Link>
+                  <span className={`flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                    task.priority === 'P0' ? 'bg-red-100 text-red-700' :
+                    task.priority === 'P1' ? 'bg-yellow-100 text-yellow-700' : 'bg-neutral-100 text-neutral-600'
+                  }`}>
+                    {task.priority}
+                  </span>
+                </div>
+                <div className="flex items-center flex-wrap gap-2 mb-3">
+                  <StatusBadge
+                    label={statusLabels[task.status] || task.status}
+                    variant={getTaskStatusVariant(task.status)}
+                  />
+                  {task.ciStatus && (
+                    <StatusBadge
+                      label={ciLabels[task.ciStatus] || task.ciStatus}
+                      variant={getCIStatusVariant(task.ciStatus)}
+                    />
+                  )}
+                  <span className="text-xs text-neutral-400">
                     {new Date(task.updatedAt).toLocaleDateString('ru-RU')}
-                  </td>
-                  {onRunEngineer && (
+                  </span>
+                </div>
+                {onRunEngineer && (task.status === 'pending' || task.status === 'draft') && (
+                  <button
+                    onClick={() => onRunEngineer(task.id)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                  >
+                    🤖 Запустить Engineer
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Table layout */}
+          <div className="hidden lg:block bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50">
+                  <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Задача</th>
+                  <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Статус</th>
+                  <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Приоритет</th>
+                  <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">CI</th>
+                  <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Обновлено</th>
+                  {onRunEngineer && <th className="text-left px-5 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">Действия</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {paginatedTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-neutral-50 transition-colors">
                     <td className="px-5 py-4">
-                      {(task.status === 'pending' || task.status === 'draft') ? (
-                        <button
-                          onClick={() => onRunEngineer(task.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
-                        >
-                          🤖 Запустить
-                        </button>
+                      <Link
+                        href={`/factory/tasks/${task.id}`}
+                        className="block group"
+                      >
+                        <span className="font-mono text-xs text-neutral-400">{task.id}</span>
+                        <span className="block text-neutral-900 font-medium group-hover:text-blue-600 transition-colors">
+                          {task.title}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge
+                        label={statusLabels[task.status] || task.status}
+                        variant={getTaskStatusVariant(task.status)}
+                      />
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                        task.priority === 'P0' ? 'bg-red-100 text-red-700' :
+                        task.priority === 'P1' ? 'bg-yellow-100 text-yellow-700' : 'bg-neutral-100 text-neutral-600'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      {task.ciStatus ? (
+                        <StatusBadge
+                          label={ciLabels[task.ciStatus] || task.ciStatus}
+                          variant={getCIStatusVariant(task.ciStatus)}
+                        />
                       ) : (
                         <span className="text-neutral-300">—</span>
                       )}
                     </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <td className="px-5 py-4 text-sm text-neutral-500">
+                      {new Date(task.updatedAt).toLocaleDateString('ru-RU')}
+                    </td>
+                    {onRunEngineer && (
+                      <td className="px-5 py-4">
+                        {(task.status === 'pending' || task.status === 'draft') ? (
+                          <button
+                            onClick={() => onRunEngineer(task.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                          >
+                            🤖 Запустить
+                          </button>
+                        ) : (
+                          <span className="text-neutral-300">—</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Pagination */}
