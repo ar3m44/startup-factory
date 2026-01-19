@@ -210,7 +210,7 @@ export interface Venture {
   slug: string;
   url: string; // Production URL
 
-  status: 'active' | 'paused' | 'killed';
+  status: 'active' | 'building' | 'launched' | 'paused' | 'killed' | 'validating';
   track: 'FAST' | 'LONG';
 
   // Даты

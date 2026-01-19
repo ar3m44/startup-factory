@@ -15,6 +15,7 @@ import type {
 import { ScoutAgent } from './agents/scout';
 import { ValidatorAgent } from './agents/validator';
 import { CodexAgent } from './agents/codex';
+import { MonitorAgent } from './agents/monitor';
 import {
   getAllSignals,
   getAllVentures,
@@ -44,12 +45,14 @@ export class Orchestrator {
   private scoutAgent: ScoutAgent;
   private validatorAgent: ValidatorAgent;
   private codexAgent: CodexAgent;
+  private monitorAgent: MonitorAgent;
   private config: OrchestratorConfig;
 
   constructor(config?: Partial<OrchestratorConfig>) {
     this.scoutAgent = new ScoutAgent();
     this.validatorAgent = new ValidatorAgent();
     this.codexAgent = new CodexAgent();
+    this.monitorAgent = new MonitorAgent();
 
     // Default config (Phase 1: manual mode)
     this.config = {
@@ -449,21 +452,66 @@ ${r.mitigation}
     console.log('📊 Running Monitor Agent...');
 
     const state = await this.loadState();
-    const activeVentures = state.ventures.filter((v) => v.status === 'active');
+    const activeVentures = state.ventures.filter(
+      (v) => v.status === 'active' || v.status === 'launched'
+    );
 
     if (activeVentures.length === 0) {
       console.log('No active ventures to monitor');
       return [];
     }
 
-    // TODO: Реализовать Monitor агента
-    // Пока просто возвращаем пустой массив
     console.log(`Monitoring ${activeVentures.length} active ventures...`);
 
+    // Analyze all ventures
+    const reports = this.monitorAgent.analyzeAll(activeVentures);
+
+    // Create summary
+    const summary = this.monitorAgent.createSummary(reports);
+    console.log(`\n📈 Monitor Summary:`);
+    console.log(`  Total: ${summary.total} ventures`);
+    console.log(`  Healthy: ${summary.healthy}`);
+    console.log(`  Warning: ${summary.warning}`);
+    console.log(`  Critical: ${summary.critical}`);
+    console.log(`  Total MRR: ${summary.totalMRR.toLocaleString()}₽`);
+
+    // Log recommendations for ventures needing attention
+    const needsAttention = this.monitorAgent.getVenturesNeedingAttention(reports);
+    if (needsAttention.length > 0) {
+      console.log(`\n⚠️ Ventures needing attention:`);
+      for (const report of needsAttention) {
+        console.log(`  ${report.ventureId}: ${report.recommendation}`);
+        console.log(`    ${report.reasoning}`);
+        if (report.actionItems.length > 0) {
+          console.log(`    Action items:`);
+          report.actionItems.forEach(item => console.log(`      - ${item}`));
+        }
+      }
+    }
+
+    // Create audit entries for each report
+    for (const report of reports) {
+      await this.createAuditEntry({
+        actor: 'Monitor',
+        type: 'decision_made',
+        data: {
+          ventureId: report.ventureId,
+          decision: report.recommendation,
+          reasoning: report.reasoning,
+          metrics: report.metrics,
+        },
+        metadata: {
+          reportId: report.id,
+          killCriteria: report.killCriteriaCheck,
+        },
+      });
+    }
+
+    // Update state
     state.lastMonitorRun = new Date().toISOString();
     await this.saveState(state);
 
-    return [];
+    return reports;
   }
 
   // ============================================================================

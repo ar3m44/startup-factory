@@ -7,20 +7,22 @@ export interface VentureCardProps {
   onClick?: () => void;
 }
 
-const statusColors = {
+const statusColors: Record<string, 'success' | 'warning' | 'default' | 'error'> = {
   active: 'success',
   building: 'warning',
   launched: 'success',
+  validating: 'warning',
   paused: 'default',
-  killed: 'error'
-} as const;
+  killed: 'error',
+};
 
 const statusLabels: Record<string, string> = {
   active: 'Active',
   building: 'Building',
   launched: 'Launched',
+  validating: 'Validating',
   paused: 'Paused',
-  killed: 'Killed'
+  killed: 'Killed',
 };
 
 export function VentureCard({ venture, onClick }: VentureCardProps) {

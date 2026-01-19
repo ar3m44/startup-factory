@@ -145,35 +145,65 @@ class EngineerRunner {
   }
 
   /**
-   * Call Claude API
+   * Call Claude API with rate limiting and retry logic
    */
   async callClaude(systemPrompt, taskContent) {
-    try {
-      const response = await this.client.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 8000,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: `Execute this TASK and generate the necessary code changes:
+    const maxRetries = 3;
+    const baseDelay = 5000; // 5 seconds
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`  Attempt ${attempt}/${maxRetries}...`);
+
+        const response = await this.client.messages.create({
+          model: 'claude-sonnet-4-5-20250929',
+          max_tokens: 8000,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: `Execute this TASK and generate the necessary code changes:
 
 ${taskContent}
 
 Follow the output format specified in your system prompt. Generate complete, production-ready code.`,
-          },
-        ],
-      });
+            },
+          ],
+        });
 
-      const content = response.content[0];
-      if (content.type !== 'text') {
-        throw new Error('Unexpected response type from Claude API');
+        const content = response.content[0];
+        if (content.type !== 'text') {
+          throw new Error('Unexpected response type from Claude API');
+        }
+
+        // Log token usage
+        if (response.usage) {
+          console.log(`  ✓ Tokens used: ${response.usage.input_tokens} input, ${response.usage.output_tokens} output`);
+        }
+
+        return content.text;
+      } catch (error) {
+        const isRateLimited = error.status === 429;
+        const isOverloaded = error.status === 529;
+        const isRetryable = isRateLimited || isOverloaded || error.status >= 500;
+
+        if (isRetryable && attempt < maxRetries) {
+          // Exponential backoff with jitter
+          const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
+          console.warn(`  ⚠️ ${isRateLimited ? 'Rate limited' : 'API error'} (${error.status}), retrying in ${Math.round(delay / 1000)}s...`);
+          await this.sleep(delay);
+        } else {
+          throw new Error(`Claude API call failed after ${attempt} attempts: ${error.message}`);
+        }
       }
-
-      return content.text;
-    } catch (error) {
-      throw new Error(`Claude API call failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Sleep helper
+   */
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
