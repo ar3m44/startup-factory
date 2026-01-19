@@ -29,6 +29,24 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, ventures }: CreateT
 
   if (!isOpen) return null;
 
+  // Защита от пустого массива ventures
+  if (ventures.length === 0) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6">
+          <h2 className="text-xl font-semibold text-neutral-900 mb-4">Нет доступных проектов</h2>
+          <p className="text-neutral-600 mb-4">Сначала создайте проект (venture), чтобы добавлять задачи.</p>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 px-4 bg-neutral-900 text-white rounded-xl hover:bg-neutral-800 transition-colors font-medium"
+          >
+            Закрыть
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

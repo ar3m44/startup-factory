@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { TasksList } from '@/components/ControlPanel/TasksList';
 import { CreateTaskModal } from '@/components/ControlPanel/CreateTaskModal';
+import { useToast } from '@/components/UI/Toast';
 import type { FixtureTask } from '@/lib/fixtures/factory-fixtures';
 
 interface TasksPageClientProps {
@@ -13,6 +14,7 @@ interface TasksPageClientProps {
 
 export function TasksPageClient({ initialTasks, ventures }: TasksPageClientProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState(initialTasks);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,17 +47,18 @@ export function TasksPageClient({ initialTasks, ventures }: TasksPageClientProps
           ciStatus: result.task.ciStatus || null,
           updatedAt: result.task.updatedAt,
         }, ...prev]);
+        showToast('Задача создана', 'success');
         router.refresh();
       } else {
-        alert('Ошибка создания задачи: ' + result.error);
+        showToast('Ошибка создания задачи: ' + result.error, 'error');
       }
     } catch (error) {
       console.error('Create task error:', error);
-      alert('Ошибка создания задачи');
+      showToast('Ошибка создания задачи', 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, showToast]);
 
   const handleRunEngineer = useCallback(async (taskId: string) => {
     try {
@@ -71,16 +74,16 @@ export function TasksPageClient({ initialTasks, ventures }: TasksPageClientProps
         setTasks(prev => prev.map(t =>
           t.id === taskId ? { ...t, status: 'in_progress' as const } : t
         ));
-        alert(`Engineer запущен для задачи ${taskId}.\n\n${result.note}`);
+        showToast(`Engineer запущен для ${taskId}`, 'success');
         router.refresh();
       } else {
-        alert('Ошибка запуска: ' + result.error);
+        showToast('Ошибка запуска: ' + result.error, 'error');
       }
     } catch (error) {
       console.error('Run engineer error:', error);
-      alert('Ошибка запуска Engineer');
+      showToast('Ошибка запуска Engineer', 'error');
     }
-  }, [router]);
+  }, [router, showToast]);
 
   return (
     <>

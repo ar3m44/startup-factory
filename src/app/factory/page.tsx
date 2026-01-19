@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Header } from '@/components/Dashboard/Header';
 import { StatsGrid } from '@/components/Dashboard/StatsGrid';
 import { Button } from '@/components/UI/Button';
+import { useToast } from '@/components/UI/Toast';
 import type { Signal, FactoryState, Venture } from '@/lib/types';
 
 interface StateResponse {
@@ -36,6 +37,7 @@ export default function FactoryPage() {
   const [state, setState] = useState<FactoryState | null>(null);
   const [loading, setLoading] = useState(true);
   const [scoutLoading, setScoutLoading] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadState();
@@ -62,12 +64,12 @@ export default function FactoryPage() {
       const res = await fetch('/api/scout', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        alert(`Scout нашёл ${data.count} сигналов!`);
+        showToast(`Scout нашёл ${data.count} сигналов!`, 'success');
         await loadState();
       }
     } catch (error) {
       console.error('Failed to run Scout:', error);
-      alert('Не удалось запустить Scout');
+      showToast('Не удалось запустить Scout', 'error');
     } finally {
       setScoutLoading(false);
     }
@@ -83,12 +85,12 @@ export default function FactoryPage() {
       const data = await res.json();
       if (data.success) {
         const { validation } = data;
-        alert(`Валидация завершена!\n\nРешение: ${validation.decision}`);
+        showToast(`Валидация завершена: ${validation.decision}`, validation.decision === 'GO' ? 'success' : 'warning');
         await loadState();
       }
     } catch (error) {
       console.error('Failed to validate signal:', error);
-      alert('Не удалось провести валидацию');
+      showToast('Не удалось провести валидацию', 'error');
     }
   };
 
@@ -142,6 +144,7 @@ export default function FactoryPage() {
               variant="primary"
               size="lg"
               loading={scoutLoading}
+              disabled={scoutLoading}
               onClick={runScout}
             >
               {scoutLoading ? 'Поиск...' : 'Запустить Scout'}

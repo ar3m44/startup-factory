@@ -10,6 +10,19 @@ import type { Signal, Venture, ValidationResult, AuditEntry, FactoryState } from
 // Database file path
 const DB_PATH = process.env.DATABASE_PATH || join(process.cwd(), 'factory.db');
 
+/**
+ * Safe JSON parse with fallback
+ */
+function safeJsonParse<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json) as T;
+  } catch {
+    console.error('Failed to parse JSON:', json.substring(0, 100));
+    return fallback;
+  }
+}
+
 // Singleton database instance
 let db: Database.Database | null = null;
 
@@ -560,17 +573,32 @@ function rowToSignal(row: SignalRow): Signal {
     confidenceScore: row.confidence_score,
     problem: row.problem,
     targetAudience: row.target_audience,
-    quotes: JSON.parse(row.quotes),
+    quotes: safeJsonParse<Array<{ text: string; url: string }>>(row.quotes, []),
     context: row.context,
     mvpDescription: row.mvp_description,
     price: row.price,
     track: row.track as Signal['track'],
-    keyFeatures: JSON.parse(row.key_features),
+    keyFeatures: safeJsonParse<string[]>(row.key_features, []),
     tam: row.tam,
-    competitors: JSON.parse(row.competitors),
+    competitors: safeJsonParse<Array<{ name: string; description: string; price: string }>>(row.competitors, []),
     advantage: row.advantage,
-    criteria: JSON.parse(row.criteria),
-    risks: JSON.parse(row.risks),
+    criteria: safeJsonParse<Signal['criteria']>(row.criteria, {
+      mandatory: {
+        repeatability: false,
+        targetAudienceSize: false,
+        paymentWillingness: false,
+        feasibility: false,
+        noFreeAlternatives: false,
+      },
+      optional: {
+        urgency: false,
+        simpleMVP: false,
+        viralPotential: false,
+        recurringRevenue: false,
+        lowCompetition: false,
+      },
+    }),
+    risks: safeJsonParse<Array<{ description: string; probability: 'low' | 'medium' | 'high'; mitigation: string }>>(row.risks, []),
     status: row.status as Signal['status'],
     validationId: row.validation_id || undefined,
   };
@@ -588,10 +616,29 @@ function rowToVenture(row: VentureRow): Venture {
     launchedAt: row.launched_at || undefined,
     pausedAt: row.paused_at || undefined,
     killedAt: row.killed_at || undefined,
-    metrics: JSON.parse(row.metrics),
+    metrics: safeJsonParse<Venture['metrics']>(row.metrics, {
+      mrr: 0,
+      totalRevenue: 0,
+      totalUsers: 0,
+      activeUsers7d: 0,
+      dailyVisits: 0,
+      conversionRate: 0,
+      churnRate: 0,
+    }),
     signalId: row.signal_id || '',
     validationId: row.validation_id || '',
-    blueprint: row.blueprint ? JSON.parse(row.blueprint) : undefined,
+    blueprint: safeJsonParse<Venture['blueprint']>(row.blueprint, {
+      name: '',
+      slug: '',
+      tagline: '',
+      description: '',
+      targetAudience: { who: '', problem: '', size: 0 },
+      mvp: { coreFeatures: [], userFlow: [], techStack: [], estimatedTime: '' },
+      pricing: { model: 'one-time', price: '', currency: 'RUB', paymentProvider: 'YooKassa' },
+      gtm: { channels: [], initialBudget: 0, firstWeekGoal: '' },
+      metrics: { track: 'FAST', targetMRR: 0, targetUsers: 0, conversionRate: 0, killCriteria: [] },
+      risks: [],
+    }),
     pauseReason: row.pause_reason || undefined,
     killReason: row.kill_reason || undefined,
   };
@@ -606,8 +653,8 @@ function rowToTask(row: TaskRow): DbTask {
     priority: row.priority as DbTask['priority'],
     status: row.status as DbTask['status'],
     type: row.type as DbTask['type'] | undefined,
-    files: row.files ? JSON.parse(row.files) : undefined,
-    dependencies: row.dependencies ? JSON.parse(row.dependencies) : undefined,
+    files: row.files ? safeJsonParse<string[]>(row.files, []) : undefined,
+    dependencies: row.dependencies ? safeJsonParse<string[]>(row.dependencies, []) : undefined,
     createdAt: row.created_at,
     startedAt: row.started_at || undefined,
     completedAt: row.completed_at || undefined,
@@ -626,7 +673,7 @@ function rowToAuditEntry(row: AuditRow): DbAuditEntry {
     actor: row.actor as DbAuditEntry['actor'],
     action: row.action,
     result: row.result || undefined,
-    data: row.data ? JSON.parse(row.data) : undefined,
-    metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+    data: row.data ? safeJsonParse<Record<string, unknown>>(row.data, {}) : undefined,
+    metadata: row.metadata ? safeJsonParse<Record<string, unknown>>(row.metadata, {}) : undefined,
   };
 }

@@ -11,6 +11,7 @@ on:
 jobs:
   execute-task:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     permissions:
       contents: write
@@ -38,13 +39,18 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TASK_ID="${{ inputs.taskId }}"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            TASK_ID="${{ inputs.taskId }}"
 
-          echo "🤖 ENGINEER starting..."
-          echo "📋 Task: $TASK_ID"
+            echo "🤖 ENGINEER starting..."
+            echo "📋 Task: $TASK_ID"
 
-          node scripts/engineer/run-task.mjs --taskId="$TASK_ID"
+            node scripts/engineer/run-task.mjs --taskId="$TASK_ID"
 
       - name: Create Pull Request
         if: success()
